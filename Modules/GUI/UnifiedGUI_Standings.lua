@@ -23,32 +23,32 @@ local function ST_GetName(row)
 end
 
 local function ST_GetClass(row)
-    return row.cols[15].value
+    return row.cols[16].value
 end
 
 local function ST_GetWeeklyGains(row)
-    return row.cols[7].value
-end
-
-local function ST_GetWeeklyCap(row)
     return row.cols[8].value
 end
 
-local function ST_GetPointInfo(row)
+local function ST_GetWeeklyCap(row)
     return row.cols[9].value
 end
 
-local function ST_GetProfileLoot(row)
+local function ST_GetPointInfo(row)
     return row.cols[10].value
+end
+
+local function ST_GetProfileLoot(row)
+    return row.cols[11].value
 end
 
 local function ST_GetLastRaidLoot(row)
 	local raid = CLM.MODULES.RaidManager:GetLastRaid()
 	local items = {}
 	
-	for k in pairs(row.cols[10].value) do
-		if date(CLM.L["%Y/%m/%d"],raid:CreatedAt()) == date(CLM.L["%Y/%m/%d"],row.cols[10].value[k]:Timestamp()) then
-			table.insert(items, row.cols[10].value[k])
+	for k in pairs(row.cols[11].value) do
+		if date(CLM.L["%Y/%m/%d"],raid:CreatedAt()) == date(CLM.L["%Y/%m/%d"],row.cols[11].value[k]:Timestamp()) then
+			table.insert(items, row.cols[11].value[k])
 		end
 	end
 	
@@ -56,11 +56,11 @@ local function ST_GetLastRaidLoot(row)
 end
 
 local function ST_GetProfilePoints(row)
-    return row.cols[11].value
+    return row.cols[12].value
 end
 
 local function ST_GetIsEPGP(row)
-    return row.cols[12].value
+    return row.cols[13].value
 end
 
 local function ST_GetEP(row)
@@ -68,11 +68,11 @@ local function ST_GetEP(row)
 end
 
 local function ST_GetIsLocked(row)
-    return row.cols[13].value
+    return row.cols[14].value
 end
 
 local function ST_GetHighlight(row)
-    return row.cols[14].value
+    return row.cols[15].value
 end
 
 local function ST_GetGP(row)
@@ -367,7 +367,7 @@ local columnsDKP = {
     {   name = "", width = 18, DoCellUpdate = UTILS.LibStClassCellUpdate },
     {   name = CLM.L["Name"],   width = 107 },
     {   name = CLM.L["DKP"], width = 65, sort = LibStub("ScrollingTable").SORT_DSC, color = colorGreen },
-	{   name = CLM.L["Spent last raid"], width = 65 },
+	{   name = CLM.L["Spent last raid"], width = 107 },
     {   name = CLM.L["Spent"], width = 65 },
     {   name = CLM.L["Received"], width = 65 },
     {   name = CLM.L["Att. [%]"], width = 60,
@@ -432,6 +432,7 @@ local tableStructure = {
                 -- Statistics
                 tooltip:AddDoubleLine(UTILS.ColorCodeText(CLM.L["Statistics"], "44ee44"), CLM.L["DKP"])
                 tooltip:AddDoubleLine(CLM.L["Total spent"], pointInfo.spent)
+				tooltip:AddDoubleLine(CLM.L["Spent last raid"], pointInfo.spentLastRaid)
                 tooltip:AddDoubleLine(CLM.L["Total received"], pointInfo.received)
                 tooltip:AddDoubleLine(CLM.L["Total blocked"], pointInfo.blocked)
                 tooltip:AddDoubleLine(CLM.L["Total decayed"], pointInfo.decayed)
@@ -552,13 +553,16 @@ local function tableDataFeeder()
         local numColumnValue
         local primary
         local secondary
+		local tertiary
         if isEPGP then
             numColumnValue = roster:Priority(GUID)
             primary = value
             secondary = roster:GP(GUID)
+			tertiary = 0
         else
             primary = pointInfo.spent
             secondary = pointInfo.received
+			tertiary = pointInfo.spentLastRaid
             numColumnValue = value
         end
         if profile then
@@ -573,19 +577,20 @@ local function tableDataFeeder()
         --[[1]]  {value = profile:ClassInternal()},
         --[[2]]  {value = profile:Name(), color = classColor},
         --[[3]]  {value = numColumnValue, color = (value > 0 and colorGreen or colorRed)},
-        --[[4]]  {value = primary},
-        --[[5]]  {value = secondary},
-        --[[6]]  {value = UTILS.ColorCodeByPercentage(attendance)},
+        --[[4]]  {value = tertiary},
+        --[[5]]  {value = primary},
+		--[[6]]  {value = secondary},
+        --[[7]]  {value = UTILS.ColorCodeByPercentage(attendance)},
             -- not displayed
-        --[[7]]  {value = roster:GetCurrentGainsForPlayer(GUID)},                            -- 7
-        --[[8]]  {value = weeklyCap},
-        --[[9]]  {value = pointInfo},
-        --[[10]] {value = roster:GetProfileLootByGUID(GUID)},
-        --[[11]] {value = roster:GetProfilePointHistoryByGUID(GUID)},
-        --[[12]] {value = isEPGP},
-        --[[13]] {value = profile:IsLocked()},
-        --[[14]] {value = highlight},
-        --[[15]] {value = profile:Class()}
+        --[[8]]  {value = roster:GetCurrentGainsForPlayer(GUID)},                            -- 7
+        --[[9]]  {value = weeklyCap},
+        --[[10]]  {value = pointInfo},
+        --[[11]] {value = roster:GetProfileLootByGUID(GUID)},
+        --[[12]] {value = roster:GetProfilePointHistoryByGUID(GUID)},
+        --[[13]] {value = isEPGP},
+        --[[14]] {value = profile:IsLocked()},
+        --[[15]] {value = highlight},
+        --[[16]] {value = profile:Class()}
             },
             DoCellUpdate = highlight
             }
