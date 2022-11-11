@@ -323,10 +323,5 @@ function LedgerManager:Wipe()
     self:Enable()
 end
 
---@do-not-package@
-function LedgerManager:Reset()
-    self.activeLedger.reset()
-end
---@end-do-not-package@
 
 CLM.MODULES.LedgerManager = LedgerManager

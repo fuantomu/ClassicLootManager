@@ -42,6 +42,19 @@ local function ST_GetProfileLoot(row)
     return row.cols[10].value
 end
 
+local function ST_GetLastRaidLoot(row)
+	local raid = CLM.MODULES.RaidManager:GetLastRaid()
+	local items = {}
+	
+	for k in pairs(row.cols[10].value) do
+		if date(CLM.L["%Y/%m/%d"],raid:CreatedAt()) == date(CLM.L["%Y/%m/%d"],row.cols[10].value[k]:Timestamp()) then
+			table.insert(items, row.cols[10].value[k])
+		end
+	end
+	
+    return items
+end
+
 local function ST_GetProfilePoints(row)
     return row.cols[11].value
 end
@@ -354,6 +367,7 @@ local columnsDKP = {
     {   name = "", width = 18, DoCellUpdate = UTILS.LibStClassCellUpdate },
     {   name = CLM.L["Name"],   width = 107 },
     {   name = CLM.L["DKP"], width = 65, sort = LibStub("ScrollingTable").SORT_DSC, color = colorGreen },
+	{   name = CLM.L["Spent last raid"], width = 65 },
     {   name = CLM.L["Spent"], width = 65 },
     {   name = CLM.L["Received"], width = 65 },
     {   name = CLM.L["Att. [%]"], width = 60,
@@ -421,6 +435,29 @@ local tableStructure = {
                 tooltip:AddDoubleLine(CLM.L["Total received"], pointInfo.received)
                 tooltip:AddDoubleLine(CLM.L["Total blocked"], pointInfo.blocked)
                 tooltip:AddDoubleLine(CLM.L["Total decayed"], pointInfo.decayed)
+            end
+			-- Last Raid History
+            local lootListLR = ST_GetLastRaidLoot(rowData)
+            tooltip:AddLine("\n")
+            if #lootListLR > 0 then
+                tooltip:AddDoubleLine(UTILS.ColorCodeText(CLM.L["Latest raid loot"], "44ee44"), isEPGP and "" or CLM.L["DKP"])
+                local limit = #lootListLR - 4 -- inclusive (- 5 + 1)
+                if limit < 1 then
+                    limit = 1
+                end
+                for i=#lootListLR, limit, -1 do
+                    local loot = lootListLR[i]
+                    local _, itemLink = GetItemInfo(loot:Id())
+                    if itemLink then
+                        local value = loot:Value()
+                        if isEPGP then
+                            value = tostring(value) .. " " .. CLM.L["GP"]
+                        end
+                        tooltip:AddDoubleLine(itemLink, value)
+                    end
+                end
+            else
+                tooltip:AddLine(UTILS.ColorCodeText(CLM.L["No loot obtained in last raid"], "44ee44"))
             end
             -- Loot History
             local lootList = ST_GetProfileLoot(rowData)

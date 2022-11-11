@@ -8,9 +8,9 @@ local UTILS     = CLM.UTILS
 
 local tremove, tinsert, smatch = table.remove, table.insert, string.match
 local GetItemInfo, tonumber = GetItemInfo, tonumber
---[===[@non-debug@
+--@non-debug@
 local IsInRaid = IsInRaid
---@end-non-debug@]===]
+--@end-non-debug@
 
 local whoami = UTILS.whoami()
 
@@ -68,11 +68,11 @@ function LootQueueManager:Initialize()
         ignoredClasses = {}
     })
     -- Wipe on login / reload if not in raid
-    --[===[@non-debug@
+    --@non-debug@
     if not IsInRaid() then
         self.db.queue = {}
     end
-    --@end-non-debug@]===]
+    --@end-non-debug@
     self.iterator = 1
     CLM.MODULES.EventManager:RegisterWoWEvent({"CHAT_MSG_LOOT"}, (function(...)
         HandleLootMessage(self, ...)

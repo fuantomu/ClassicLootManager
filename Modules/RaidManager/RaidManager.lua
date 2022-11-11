@@ -221,6 +221,18 @@ function RaidManager:ListRaids()
     return self.cache.raids
 end
 
+function RaidManager:GetLastRaid()
+	local last_timestamp = 0
+	local last_key = 0
+    for k,v in pairs(self.cache.raids) do
+		if v:CreatedAt() > last_timestamp and CONSTANTS.RAID_STATUS.FINISHED == v:Status() then
+			last_timestamp = v:CreatedAt()
+			last_key = k
+		end
+	end
+	return self.cache.raids[last_key]
+end
+
 function RaidManager:GetRaidByUid(raidUid)
     return self.cache.raids[raidUid]
 end
@@ -332,12 +344,12 @@ function RaidManager:StartRaid(raid)
         LOG:Message(CLM.L["Raid management is disabled during time traveling."])
         return
     end
-    --[===[@non-debug@
+    --@non-debug@
     if (self:GetRaid() ~= raid) or not IsInRaid() then
         LOG:Message(CLM.L["You are not in the raid."])
         return
     end
-    --@end-non-debug@]===]
+    --@end-non-debug@
 
     -- Lazy fill raid roster
     CLM.MODULES.RosterManager:AddFromRaidToRoster(raid:Roster())
@@ -725,10 +737,10 @@ function RaidManager:IsRaidOwner(name)
 end
 
 function RaidManager:IsAllowedToAuction(name, relaxed)
-    --@debug@
+    --[==[@debug@
     return true
-    --@end-debug@
-    --[===[@non-debug@
+    --@end-debug@]==]
+    --@non-debug@
     LOG:Trace("RaidManager:IsAllowedToAuction()")
     name = name or whoami
 
@@ -744,7 +756,7 @@ function RaidManager:IsAllowedToAuction(name, relaxed)
         LOG:Debug("%s is not allowed to auction.", name)
     end
     return allow
-    --@end-non-debug@]===]
+    --@end-non-debug@
 end
 
 function RaidManager:GetRaid()
