@@ -1,5 +1,5 @@
 local _, CLM = ...
-if GetLocale() == "deDE" then
+if GetLocale() == "deDE" or GetLocale() == "enUS" then
 -- Modules/GUI/UnifiedGUI_Audit.lua:326
 CLM.L[" alt of: "] = " Twink von: "
 -- Utils.lua:498
@@ -1154,6 +1154,7 @@ CLM.L["Netherspite"] = "Nethergroll"
 CLM.L["Never show changelog"] = "Niemals das Änderungsprotokoll (Changelog) zeigen"
 -- Modules/AuctionManager/AuctionManager.lua:462
 CLM.L["New highest bid: %d DKP %s"] = "Neues Höchstgebot: %d DKP %s"
+CLM.L["Offspec bid: %d DKP %s"] = "Neues Offspecgebot: %d DKP %s"
 -- Integrations/Import.lua:108
 CLM.L["New roster: %s"] = "Neuer Kader: %s"
 -- Migration.lua:109
