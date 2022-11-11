@@ -20,6 +20,7 @@ CLM.L["% that will be decayed."] = "% die verfallen wird."
 -- Modules/GUI/UnifiedGUI_History.lua:325
 -- Modules/GUI/UnifiedGUI_History.lua:383
 CLM.L["%Y/%m/%d %H:%M:%S (%A)"] = "%Y/%m/%d %H:%M:%S (%A)"
+CLM.L["%Y/%m/%d"] = "%d/%m/%Y"
 -- Integrations/Exporter.lua:317
 -- Integrations/Exporter.lua:318
 -- Modules/AuctionHistoryManager/GUI.lua:230
@@ -951,7 +952,11 @@ CLM.L["Last week"] = "Letzte Woche"
 -- Integrations/GUI.lua:334
 CLM.L["Last year"] = "Vergangenes Jahr"
 -- Modules/GUI/UnifiedGUI_Standings.lua:429
-CLM.L["Latest loot"] = "Letzte Beute"
+CLM.L["Latest loot"] = "Loothistorie"
+-- Modules/GUI/UnifiedGUI_Standings.lua:429
+CLM.L["No loot obtained in last raid"] = "Kein Loot im letzten Raid erhalten"
+-- Modules/GUI/UnifiedGUI_Standings.lua:429
+CLM.L["Latest raid loot"] = "Loot im letzten Raid"
 -- Modules/GUI/UnifiedGUI_Standings.lua:452
 CLM.L["Latest points"] = "Neueste Punkte"
 -- Utils.lua:851
@@ -1601,6 +1606,8 @@ CLM.L["Small"] = "Klein"
 CLM.L["Spec guild request"] = "Spzialisierungen von der Gilde anfordern"
 -- Modules/GUI/UnifiedGUI_Standings.lua:357
 CLM.L["Spent"] = "Ausgaben"
+-- Modules/GUI/UnifiedGUI_Standings.lua:357
+CLM.L["Spent last raid"] = "Ausgaben letzter Raid"
 -- Modules/RaidManager/RaidManager.lua:783
 CLM.L["Stale"] = "Abgestanden"
 -- Modules/StandbyStagingManager/StandbyStagingManager.lua:138
