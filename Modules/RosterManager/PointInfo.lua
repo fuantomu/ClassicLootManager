@@ -17,6 +17,8 @@ function PointInfo:New()
 
     -- Points spent on loot
     o.spent = 0
+	-- Points spent on loot last raid
+    o.spentLastRaid = 0
     -- Points received
     o.received = 0
     -- Pointes not received due to caps
@@ -31,8 +33,20 @@ local function Add(self, param, value)
     self[param] = self[param] + (value or 0)
 end
 
+local function Reset(self, param)
+    self[param] = 0
+end
+
 function PointInfo:AddSpent(value)
     Add(self, "spent", value)
+end
+
+function PointInfo:AddSpentLastRaid(value)
+	Add(self, "spentLastRaid", value)
+end
+
+function PointInfo:ResetLastRaid(value)
+	Reset(self, "spentLastRaid")
 end
 
 function PointInfo:AddReceived(value)

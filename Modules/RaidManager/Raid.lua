@@ -55,11 +55,40 @@ end
 function Raid:Start(time)
     self.status = CONSTANTS.RAID_STATUS.IN_PROGRESS
     self.startTime = time
+	
+	local players = self.players
+    for player,_ in pairs(players) do
+		local pointinfo = self.roster:GetPointInfoForPlayer(player)
+		pointinfo:ResetLastRaid()
+	end
 end
 
 function Raid:End(time)
     self.status = CONSTANTS.RAID_STATUS.FINISHED
     self.endTime = time
+	
+	local loot = self.roster:GetRaidLoot()
+	local players = self.players
+	
+	--for player,_ in pairs(players) do
+	--	print(self.roster:GetProfileLootByGUID(player))
+		--if loot[k]:OwnerGUID == player then
+		--	print(loot[k]:Id(), player)
+		--end
+	--end
+	
+	for k in pairs(loot) do
+		if date(CLM.L["%Y/%m/%d"],self.endTime) == date(CLM.L["%Y/%m/%d"],loot[k]:Timestamp()) then
+			for player,_ in pairs(players) do
+				if loot[k]:OwnerGUID() == player then
+					--print(loot[k]:Id(), player)
+					self.roster:AddSpentLoot(loot[k], player)
+				end
+			end
+		end
+	end
+	
+	
 end
 
 function Raid:SetStale()

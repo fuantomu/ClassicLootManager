@@ -501,6 +501,7 @@ function Roster:AddLoot(loot, profile)
     self.profileLoot[GUID][#self.profileLoot[GUID]+1] = loot
     self.raidLoot[#self.raidLoot+1] = loot
     if profile:IsLocked() then return end
+	
     self.pointInfo[GUID]:AddSpent(loot:Value())
     if self:GetPointType() == CONSTANTS.POINT_TYPE.DKP then
         -- Charging for the item
@@ -508,6 +509,10 @@ function Roster:AddLoot(loot, profile)
         -- Correct for the spending since it will be subtracted in update standings
         self.pointInfo[GUID]:AddReceived(loot:Value())
     end
+end
+
+function Roster:AddSpentLoot(loot, GUID)
+    self.pointInfo[GUID]:AddSpentLastRaid(loot:Value())
 end
 
 function Roster:GetRaidLoot()
