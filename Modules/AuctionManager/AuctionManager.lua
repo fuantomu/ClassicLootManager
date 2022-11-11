@@ -455,11 +455,14 @@ function AuctionManager:AnnounceBid(newHighBid, name, bid)
     end
 
     -- Raid warning highest bidder
-    if not newHighBid then return end
+    if not newHighBid and bid:Type() == CONSTANTS.BID_TYPE.MAIN_SPEC then return end
     if not CLM.GlobalConfigs:GetBidsWarning() then return end
     if self.itemValueMode ~= CONSTANTS.ITEM_VALUE_MODE.ASCENDING then return end
-    if bid:Type() ~= CONSTANTS.BID_TYPE.MAIN_SPEC then return end
-    message = sformat(CLM.L["New highest bid: %d DKP %s"], bid:Value(), nameModdified)
+    if bid:Type() ~= CONSTANTS.BID_TYPE.MAIN_SPEC then 
+		message = sformat(CLM.L["Offspec bid: %d DKP %s"], bid:Value(), nameModdified)
+	else
+		message = sformat(CLM.L["New highest bid: %d DKP %s"], bid:Value(), nameModdified)
+	end
     SendChatMessage(message, "RAID_WARNING")
 end
 
@@ -565,7 +568,7 @@ function AuctionManager:ValidateBid(name, bid)
             if value == self.values[CONSTANTS.SLOT_VALUE_TIER.BASE] and self.userResponses.bids[name] == nil then
                 return true
             end
-            if value <= self.highestBid then
+            if value < self.highestBid then
                 return false, CONSTANTS.AUCTION_COMM.DENY_BID_REASON.BID_VALUE_TOO_LOW
             end
             if (value - self.highestBid) < self.minimalIncrement then
