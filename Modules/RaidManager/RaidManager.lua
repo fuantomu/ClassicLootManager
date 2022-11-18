@@ -466,6 +466,20 @@ function RaidManager:JoinRaid(raid)
     CLM.MODULES.LedgerManager:Submit(CLM.MODELS.LEDGER.RAID.Update:new(raid:UID(), {}, {CLM.MODULES.ProfileManager:GetMyProfile()}), true)
 end
 
+function RaidManager:CalculateSpentPoints(raid)
+    LOG:Trace("RaidManager:CalculateSpentPoints()")
+    if not UTILS.typeof(raid, CLM.MODELS.Raid) then
+        LOG:Message(CLM.L["Missing valid raid"])
+        return
+    end
+    if CLM.MODULES.LedgerManager:IsTimeTraveling() then
+        LOG:Message(CLM.L["Raid management is disabled during time traveling."])
+        return
+    end
+    print("Calculating spent dkp",raid)
+    raid:CalculateSpentPoints()
+end
+
 function RaidManager:AddToStandby(raid, standby)
     LOG:Trace("RaidManager:AddToStandby()")
     if not UTILS.typeof(raid, CLM.MODELS.Raid) then

@@ -1448,6 +1448,8 @@ CLM.L["Remove override"] = "Überschreiben entfernen"
 CLM.L["Remove roster"] = "Roster entfernen"
 -- Modules/GUI/UnifiedGUI_Raids.lua:433
 CLM.L["Remove selected raid"] = "Ausgewählten Raid entfernen"
+
+CLM.L["Calculate spent points"] = "Ausgegebene DKP berechnen"
 -- Modules/GUI/UnifiedGUI_Profiles.lua:289
 -- Modules/GUI/UnifiedGUI_History.lua:399
 -- Modules/GUI/UnifiedGUI_Audit.lua:757

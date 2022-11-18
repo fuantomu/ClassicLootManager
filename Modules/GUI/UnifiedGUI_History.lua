@@ -322,7 +322,7 @@ local function tableDataFeeder()
                 {value = lootData[2]},
                 {value = lootData[2]}, -- itemLink
                 {value = value},
-                {value = date(CLM.L["%Y/%m/%d"], loot:Timestamp())},
+                {value = date(CLM.L["%Y/%m/%d %H:%M:%S (%A)"], loot:Timestamp())},
                 {value = lootData[3]}, -- owner
                 -- Not visible
                 {value = true}, -- is Loot
@@ -380,7 +380,7 @@ local function tableDataFeeder()
                 {value = value,
                     color = ((isEPGP and history:Spent()) and colorTurquoise)
                 },
-                {value = date(CLM.L["%Y/%m/%d"], history:Timestamp())},
+                {value = date(CLM.L["%Y/%m/%d %H:%M:%S (%A)"], history:Timestamp())},
                 {value = player, color = color},
                 {value = false},
                 {value = history}
