@@ -58,7 +58,7 @@ function Raid:Start(time)
 	
 	local players = self.participated.inRaid
     for players, _ in pairs(players) do
-		local pointinfo = self.roster:GetPointInfoForPlayer(players)
+		local pointinfo = self.roster:GetPointInfoForPlayer(player)
 		pointinfo:ResetLastRaid()
 	end
 end
