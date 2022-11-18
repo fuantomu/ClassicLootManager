@@ -23,32 +23,32 @@ local function ST_GetName(row)
 end
 
 local function ST_GetClass(row)
-    return row.cols[16].value
+    return row.cols[17].value
 end
 
 local function ST_GetWeeklyGains(row)
-    return row.cols[8].value
-end
-
-local function ST_GetWeeklyCap(row)
     return row.cols[9].value
 end
 
-local function ST_GetPointInfo(row)
+local function ST_GetWeeklyCap(row)
     return row.cols[10].value
 end
 
-local function ST_GetProfileLoot(row)
+local function ST_GetPointInfo(row)
     return row.cols[11].value
+end
+
+local function ST_GetProfileLoot(row)
+    return row.cols[12].value
 end
 
 local function ST_GetLastRaidLoot(row)
 	local raid = CLM.MODULES.RaidManager:GetLastRaid()
 	local items = {}
 	
-	for k in pairs(row.cols[11].value) do
-		if date(CLM.L["%Y/%m/%d"],raid:CreatedAt()) == date(CLM.L["%Y/%m/%d"],row.cols[11].value[k]:Timestamp()) then
-			table.insert(items, row.cols[11].value[k])
+	for k in pairs(row.cols[12].value) do
+		if date(CLM.L["%Y/%m/%d"],raid:CreatedAt()) == date(CLM.L["%Y/%m/%d"],row.cols[12].value[k]:Timestamp()) then
+			table.insert(items, row.cols[12].value[k])
 		end
 	end
 	
@@ -56,11 +56,11 @@ local function ST_GetLastRaidLoot(row)
 end
 
 local function ST_GetProfilePoints(row)
-    return row.cols[12].value
+    return row.cols[13].value
 end
 
 local function ST_GetIsEPGP(row)
-    return row.cols[13].value
+    return row.cols[14].value
 end
 
 local function ST_GetEP(row)
@@ -68,11 +68,11 @@ local function ST_GetEP(row)
 end
 
 local function ST_GetIsLocked(row)
-    return row.cols[14].value
+    return row.cols[15].value
 end
 
 local function ST_GetHighlight(row)
-    return row.cols[15].value
+    return row.cols[16].value
 end
 
 local function ST_GetGP(row)
@@ -372,7 +372,8 @@ local columnsDKP = {
     {   name = CLM.L["Received"], width = 65 },
     {   name = CLM.L["Att. [%]"], width = 60,
         comparesort = UTILS.LibStCompareSortWrapper(UTILS.LibStModifierFnNumber)
-    }
+    },
+    {   name = CLM.L["Att. last raid"], width = 65 }
 }
 
 local columnsEPGP = {
@@ -546,6 +547,7 @@ local function tableDataFeeder()
     for GUID,value in pairs(roster:Standings()) do
         local profile = CLM.MODULES.ProfileManager:GetProfileByGUID(GUID)
         local attendance = UTILS.round(roster:GetAttendance(GUID) or 0, 0)
+        local attended_last_raid = roster:GetAttendedLastRaid(GUID) or CLM.L["No"]
         local pointInfo = roster:GetPointInfoForPlayer(GUID)
         local numColumnValue
         local primary
@@ -578,16 +580,17 @@ local function tableDataFeeder()
         --[[5]]  {value = primary},
 		--[[6]]  {value = secondary},
         --[[7]]  {value = UTILS.ColorCodeByPercentage(attendance)},
+        --[[8]]  {value = attended_last_raid},
             -- not displayed
-        --[[8]]  {value = roster:GetCurrentGainsForPlayer(GUID)},                            -- 7
-        --[[9]]  {value = weeklyCap},
-        --[[10]]  {value = pointInfo},
-        --[[11]] {value = roster:GetProfileLootByGUID(GUID)},
-        --[[12]] {value = roster:GetProfilePointHistoryByGUID(GUID)},
-        --[[13]] {value = isEPGP},
-        --[[14]] {value = profile:IsLocked()},
-        --[[15]] {value = highlight},
-        --[[16]] {value = profile:Class()}
+        --[[9]]  {value = roster:GetCurrentGainsForPlayer(GUID)},                            -- 7
+        --[[10]]  {value = weeklyCap},
+        --[[11]]  {value = pointInfo},
+        --[[12]] {value = roster:GetProfileLootByGUID(GUID)},
+        --[[13]] {value = roster:GetProfilePointHistoryByGUID(GUID)},
+        --[[14]] {value = isEPGP},
+        --[[15]] {value = profile:IsLocked()},
+        --[[16]] {value = highlight},
+        --[[17]] {value = profile:Class()}
             },
             DoCellUpdate = highlight
             }

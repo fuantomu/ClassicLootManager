@@ -65,6 +65,9 @@ CLM.L["25 Player (Heroic)"] = "25 Spieler (heroisch)"
 CLM.L["25 Player"] = "25 Spieler"
 -- Modules/AutoAwardManager/EncounterIDs.lua:168
 CLM.L["40 Player"] = "40 Spieler"
+
+CLM.L["No"] = "Nein"
+CLM.L["Yes"] = "Ja"
 -- Global/GlobalChatMessageHandlers.lua:96
 CLM.L["<CLM> %s not present in any roster."] = "<CLM> %s in keinem Roster vorhanden."
 -- Global/GlobalChatMessageHandlers.lua:98

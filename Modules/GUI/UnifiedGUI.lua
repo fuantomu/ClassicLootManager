@@ -270,7 +270,7 @@ function UnifiedGUI:CreateAceGUIStructure()
     f:SetTitle(CLM.L["Classic Loot Manager"])
     f:SetLayout("Fill")
     f:EnableResize(false)
-    f:SetWidth(700)
+    f:SetWidth(900)
     f:SetHeight(572)
     self.aceObjects = {
       top = f
