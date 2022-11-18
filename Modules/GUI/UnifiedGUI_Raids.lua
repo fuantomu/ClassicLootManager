@@ -443,6 +443,26 @@ local function initializeHandler()
                 trustedOnly = true,
                 managerOnly = true,
                 color = "cc0000"
+            },
+            {
+                separator = true,
+                trustedOnly = true,
+                managerOnly = true
+            },
+            {
+                title = CLM.L["Calculate spent points"],
+                func = (function()
+                    local raid = UnifiedGUI_Raids:GetSelection()
+                    if raid then
+                        CLM.MODULES.RaidManager:CalculateSpentPoints(raid)
+                    else
+                        LOG:Message(CLM.L["Please select a raid"])
+                    end
+                    CLM.GUI.Unified:ClearSelection()
+                end),
+                trustedOnly = true,
+                managerOnly = true,
+                color = "eeee00"
             }
         },
         CLM.MODULES.ACL:CheckLevel(CONSTANTS.ACL.LEVEL.ASSISTANT),

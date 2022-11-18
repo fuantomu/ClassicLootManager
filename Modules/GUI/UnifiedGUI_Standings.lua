@@ -442,10 +442,7 @@ local tableStructure = {
             tooltip:AddLine("\n")
             if #lootListLR > 0 then
                 tooltip:AddDoubleLine(UTILS.ColorCodeText(CLM.L["Latest raid loot"], "44ee44"), isEPGP and "" or CLM.L["DKP"])
-                local limit = #lootListLR - 4 -- inclusive (- 5 + 1)
-                if limit < 1 then
-                    limit = 1
-                end
+                local limit = 1
                 for i=#lootListLR, limit, -1 do
                     local loot = lootListLR[i]
                     local _, itemLink = GetItemInfo(loot:Id())

@@ -45,7 +45,7 @@ function PointInfo:AddSpentLastRaid(value)
 	Add(self, "spentLastRaid", value)
 end
 
-function PointInfo:ResetLastRaid(value)
+function PointInfo:ResetLastRaid()
 	Reset(self, "spentLastRaid")
 end
 
