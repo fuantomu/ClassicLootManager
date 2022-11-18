@@ -596,6 +596,15 @@ function Roster:GetAttendance(GUID)
     return self.attendanceTracker:Get(GUID)
 end
 
+function Roster:GetAttendedLastRaid(GUID)
+    local raid = CLM.MODULES.RaidManager:GetLastRaid()
+    if raid.participated.inRaid[GUID] then
+        return CLM.L["Yes"]
+    else
+        return CLM.L["No"]
+    end
+end
+
 CLM.MODELS.Roster = Roster
 
 -- Constants
