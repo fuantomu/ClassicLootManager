@@ -32,7 +32,7 @@ CLM.L["%s %% %s decay"] = "%s %% %s Zerfall"
 -- Alerts/Alerts.lua:18
 CLM.L["%s %s"] = "%s %s"
 -- Modules/LootManager/LootManager.lua:142
-CLM.L["%s awarded to %s for %s %s"] = "%s für %s %s an %s verliehen"
+CLM.L["%s awarded to %s for %s %s"] = "%s an %s für %s %s verliehen"
 -- MinimapIcon.lua:37
 CLM.L["%s events (%s pending)"] = "%s Events (%s ausstehend)"
 -- MinimapIcon.lua:39
@@ -187,7 +187,8 @@ CLM.L["Ascending"] = "Aufsteigend"
 CLM.L["Assistant"] = "Assistent"
 -- Modules/GUI/UnifiedGUI_Standings.lua:359
 -- Modules/GUI/UnifiedGUI_Standings.lua:370
-CLM.L["Att. [%]"] = "Att. [%]"
+CLM.L["Att. [%]"] = "Anwes. [%]"
+CLM.L["Att. last raid"] = "Anwes. letzter Raid"
 -- Modules/RosterManager/RosterManager.lua:372
 CLM.L["Attendance"] = "Anwesenheit"
 -- Modules/AutoAwardManager/EncounterIDs.lua:64
