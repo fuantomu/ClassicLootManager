@@ -461,6 +461,7 @@ function AuctionManager:AnnounceBid(newHighBid, name, bid)
     if bid:Type() == CONSTANTS.BID_TYPE.OFF_SPEC then 
 		message = sformat(CLM.L["Offspec bid: %d DKP %s"], bid:Value(), nameModdified)
         SendChatMessage(message, "RAID_WARNING")
+    end
 	if bid:Type() == CONSTANTS.BID_TYPE.MAIN_SPEC then
 		message = sformat(CLM.L["New highest bid: %d DKP %s"], bid:Value(), nameModdified)
         SendChatMessage(message, "RAID_WARNING")
