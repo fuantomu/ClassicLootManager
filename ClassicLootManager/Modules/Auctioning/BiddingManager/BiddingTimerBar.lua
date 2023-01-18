@@ -55,10 +55,8 @@ local function Create(self, item, auction, options)
     end)
 
     self.parent = CreateFrame("Frame")
-    -- local tint = self.parent:CreateTexture(nil, "BACKGROUND")
-    -- tint:SetAllPoints()
-    -- tint:SetColorTexture(math.random(0.5,1), math.random(0.5,1), math.random(0.5,1), 0.7)
 
+    -- self.bar:SetParent(parent) -- makes the bar disappear
     self.bar:SetPoint("CENTER", self.parent, "CENTER", 0, 0)
 
     self.parent:ClearAllPoints()
@@ -105,7 +103,6 @@ function BiddingTimerBar:Test(options)
         GetEndTime = function() return GetServerTime() + 300 end,
         GetTime = function() return 300 end,
     }
-    options.callback = function() CLM.LOG:Message("Test Bar Clicked") end
     return BiddingTimerBar:New(item, auction, options)
 end
 
@@ -129,8 +126,8 @@ function BiddingTimerBar:UpdateTime(time)
 end
 
 function BiddingTimerBar:Stop()
-    self.parent:Hide()
     if self.bar.running then
+        self.parent:Hide()
         self.bar:Stop()
     end
 end

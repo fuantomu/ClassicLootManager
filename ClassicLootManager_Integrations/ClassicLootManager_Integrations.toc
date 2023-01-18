@@ -1,11 +1,10 @@
 ## Interface: 30401
-## Interface-Wrath: 30401
 ## X-Min-Interface: 30401
 ## X-Min-Interface-Wrath: 30401
 ## Title: |cffdcb749Classic Loot Manager|r |cff44ee44Integrations|r
 ## Notes: External Integration System for |cffdcb749Classic Loot Manager|r
 ## Author: Lantis
-## Version: @project-version@
+## Version: v3.0.0
 ## RequiredDeps: ClassicLootManager
 ## OptionalDeps: LibStub
 ## X-Donate: https://www.patreon.com/classiclootmanager

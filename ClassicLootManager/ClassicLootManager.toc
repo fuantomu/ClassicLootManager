@@ -1,11 +1,10 @@
 ## Interface: 30401
-## Interface-Wrath: 30401
 ## X-Min-Interface: 30401
 ## X-Min-Interface-Wrath: 30401
 ## Title: |cffdcb749Classic Loot Manager|r
 ## Notes: Robust, DKP and EPGP based Loot Manager system
 ## Author: Lantis
-## Version: @project-version@
+## Version: v3.0.0
 ## OptionalDeps: LibStub, Gargul, RCLootCouncil_Classic, Ace3, ViragDevTool
 ## X-Donate: https://www.patreon.com/classiclootmanager
 ## X-License: MIT

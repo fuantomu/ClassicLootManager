@@ -20,7 +20,7 @@ CLM.OPTIONS = {}
 CLM.ALERTS = {}
 CLM.EXTERNAL = {}
 
-CLM.AUTOVERSION = "@project-version@"
+CLM.AUTOVERSION = "v3.0.0a"
 
 CLM.LOG = LibStub("LibLogger"):New()
 
@@ -237,11 +237,11 @@ end
 function CORE:_Initialize()
     LOG:Trace("CORE:_Initialize()")
     -- Block direct lib timetravel
-    --[===[@non-debug@
+    --@non-debug@
     if SLASH_LibEventSourcing_TimeTravel1 then
         SLASH_LibEventSourcing_TimeTravel1 = nil
     end
-    --@end-non-debug@]===]
+    --@end-non-debug@
     if not self._initialize_fired then
         CORE:_ExecuteInitialize()
         self:UnregisterEvent("GUILD_ROSTER_UPDATE")
@@ -286,8 +286,3 @@ function CORE:GUILD_ROSTER_UPDATE(...)
     end
 end
 
---@do-not-package@
-if ViragDevTool then
-    ViragDevTool_AddData(CLM, "CLM")
-end
---@end-do-not-package@
