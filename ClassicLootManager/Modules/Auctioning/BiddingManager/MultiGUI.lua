@@ -207,7 +207,7 @@ end
 local whoamiGUID = UTILS.whoamiGUID()
 local function BidAllIn(self)
     local roster = CLM.MODULES.BiddingManager:GetAuctionInfo():GetRoster()
-    if roster:IsProfileInRoster(whoamiGUID) then
+    if roster and roster:IsProfileInRoster(whoamiGUID) then
         local standings = roster:Standings(whoamiGUID)
         SetInputValue(self, standings)
         BidInputValue(self, CONSTANTS.BID_TYPE.MAIN_SPEC)
@@ -233,10 +233,10 @@ local buttonOptions = {
 
 local numRows
 
-local function GenerateValueButtonsAuctionOptions(self, auctionInfo)
-    local itemValueMode = auctionInfo and auctionInfo:GetMode() or CONSTANTS.ITEM_VALUE_MODE.SINGLE_PRICED
-    local useOS = auctionInfo and auctionInfo:GetUseOS()
-    local auctionType = auctionInfo and auctionInfo:GetType() or 0
+local function GenerateValueButtonsAuctionOptions(self, auction)
+    local itemValueMode = auction and auction:GetMode() or CONSTANTS.ITEM_VALUE_MODE.SINGLE_PRICED
+    local useOS = auction and auction:GetUseOS()
+    local auctionType = auction and auction:GetType() or 0
 
     numRows = 2
 
@@ -383,14 +383,14 @@ local function GenerateValueButtonsAuctionOptions(self, auctionInfo)
     buttonOptions.args = generateButtonOptions
 end
 
-local function GenerateNamedButtonsAuctionOptions(self, auctionInfo)
+local function GenerateNamedButtonsAuctionOptions(self, auction)
     local options = {}
     local offset = 3
     local row_width = rowMultiplier/2
     local numButtons = 0
     local usedTiers
 
-    local itemValueMode = auctionInfo and auctionInfo:GetMode() or CONSTANTS.ITEM_VALUE_MODE.SINGLE_PRICED
+    local itemValueMode = auction and auction:GetMode() or CONSTANTS.ITEM_VALUE_MODE.SINGLE_PRICED
 
     if itemValueMode == CONSTANTS.ITEM_VALUE_MODE.TIERED then
         usedTiers = CONSTANTS.SLOT_VALUE_TIERS_ORDERED_REVERSED
@@ -409,7 +409,7 @@ local function GenerateNamedButtonsAuctionOptions(self, auctionInfo)
     if usedTiers then
         for _,tier in ipairs(usedTiers) do
             local value = tonumber(values[tier]) or 0
-            local name = auctionInfo:GetFieldName(tier)
+            local name = auction:GetFieldName(tier)
             if name and name ~= "" and (value >= 0) then
                 options[tier] = {
                     name = name,
@@ -446,7 +446,7 @@ local function GenerateNamedButtonsAuctionOptions(self, auctionInfo)
             if GetCloseOnBid(self) then self:Toggle() end
         end),
         -- disabled = (function()
-        --         return CONSTANTS.AUCTION_TYPES_OPEN[auctionInfo:GetType()] and (CLM.MODULES.BiddingManager:GetLastBidValue() ~= nil)
+        --         return CONSTANTS.AUCTION_TYPES_OPEN[auction:GetType()] and (CLM.MODULES.BiddingManager:GetLastBidValue() ~= nil)
         -- end),
         width = cancelPassWidth,
         order = offset
@@ -469,7 +469,7 @@ local function GenerateNamedButtonsAuctionOptions(self, auctionInfo)
     if isEven then numRows = 1 end
     numRows = numRows + math.ceil(numButtons/2)
 
-    self.top:SetHeight(BASE_HEIGHT + (CONSTANTS.AUCTION_TYPES_OPEN[auctionInfo and auctionInfo:GetType()] and BIDS_HEIGHT or 0) + ((numRows)*ROW_HEIGHT))
+    self.top:SetHeight(BASE_HEIGHT + (CONSTANTS.AUCTION_TYPES_OPEN[auction and auction:GetType()] and BIDS_HEIGHT or 0) + ((numRows)*ROW_HEIGHT))
 
     bidOptions.args = {}
     buttonOptions.args = options
@@ -484,10 +484,10 @@ local function GenerateAuctionOptions(self)
         itemLink = auctionItem:GetItemLink()
     end
 
-    local auctionInfo = CLM.MODULES.BiddingManager:GetAuctionInfo()
+    local auction = CLM.MODULES.BiddingManager:GetAuctionInfo()
 
     -- local shortItemLink = "item:" .. tostring(itemId)
-    local namedButtonsMode = auctionInfo and auctionInfo:GetNamedButtonsMode() or false
+    local namedButtonsMode = auction and auction:GetNamedButtonsMode() or false
 
     itemOptions.args = {
         icon = {
@@ -511,9 +511,9 @@ local function GenerateAuctionOptions(self)
     }
 
     if namedButtonsMode then
-        GenerateNamedButtonsAuctionOptions(self, auctionInfo)
+        GenerateNamedButtonsAuctionOptions(self, auction)
     else
-        GenerateValueButtonsAuctionOptions(self, auctionInfo)
+        GenerateValueButtonsAuctionOptions(self, auction)
     end
 end
 
@@ -666,10 +666,10 @@ local function CreateDataGroup(self)
     return DataGroup
 end
 
-local prevBLH
+local originalBidListHeight -- ElvUI Workaround. fix it TODO
 local function UpdateUIStructure(self)
-    local auctionInfo = CLM.MODULES.BiddingManager:GetAuctionInfo()
-    if (auctionInfo and auctionInfo:GetNamedButtonsMode() or false) then
+    local auction = CLM.MODULES.BiddingManager:GetAuctionInfo()
+    if (auction and auction:GetNamedButtonsMode() or false) then
         if (self.currentDisplayMode ~= DISPLAY_MODE_BUTTONS) then
             local isVisible = self.top:IsVisible()
             self.top:Show() -- this helps to fix scaling issues with Ace3
@@ -701,19 +701,19 @@ local function UpdateUIStructure(self)
             end
         end
     end
-    if CONSTANTS.AUCTION_TYPES_OPEN[auctionInfo and auctionInfo:GetType()] then
+    if CONSTANTS.AUCTION_TYPES_OPEN[auction and auction:GetType()] then
         self.BidList:Show()
-        if isElvUI and prevBLH then
-            self.BidList:SetHeight(prevBLH)
+        if isElvUI and originalBidListHeight then
+            self.BidList:SetHeight(originalBidListHeight)
         end
         local itemRows = UTILS.Saturate(numRows + 6, 1, 8)
         self.ItemList:SetDisplayRows(itemRows, 32)
     else
-        self.BidList:Hide()
-        if isElvUI then
-            prevBLH = self.BidList.frame:GetHeight()
+        if isElvUI and not originalBidListHeight then
+            originalBidListHeight = self.BidList.frame:GetHeight()
             self.BidList:SetHeight(0)
         end
+        self.BidList:Hide()
 
         local itemRows = UTILS.Saturate(numRows + 1, 1, 4)
         self.ItemList:SetDisplayRows(itemRows, 32)
@@ -764,7 +764,7 @@ local function Create(self)
     f:Hide()
 end
 
-local function RefreshItemList(self)
+function BiddingManagerGUI:RefreshItemList()
     local auction = CLM.MODULES.BiddingManager:GetAuctionInfo()
     if auction then
         local itemList = {}
@@ -862,21 +862,23 @@ function BiddingManagerGUI:SetVisibleAuctionItem(auctionItem)
     SetInputValue(self, values[CONSTANTS.SLOT_VALUE_TIER.BASE])
 end
 
-local function BuildBidRow(name, response, roster, namedButtonMode)
+local function BuildBidRow(name, response, roster, namedButtonMode, auction)
     local profile = CLM.MODULES.ProfileManager:GetProfileByName(name)
     local class, classColor, current = "", nil, 0
     if profile then
         class = profile:ClassInternal()
         classColor = UTILS.GetClassColor(profile:Class())
-        if roster:GetPointType() == CONSTANTS.POINT_TYPE.DKP then
-            current = roster:Standings(profile:GUID())
-        else
-            current = roster:Priority(profile:GUID())
+        if roster then
+            if roster:GetPointType() == CONSTANTS.POINT_TYPE.DKP then
+                current = roster:Standings(profile:GUID())
+            else
+                current = roster:Priority(profile:GUID())
+            end
         end
     end
     local bidTypeString
     if namedButtonMode then
-        bidTypeString = roster:GetFieldName(response:Type())
+        bidTypeString = auction:GetFieldName(response:Type())
         if not bidTypeString or bidTypeString == "" then bidTypeString = nil end
     end
     local bidColor
@@ -912,7 +914,7 @@ function BiddingManagerGUI:RefreshBidList()
         local roster = auction:GetRoster()
         for name, response in pairs(item:GetAllResponses()) do
             if not CONSTANTS.BID_TYPE_HIDDEN[response:Type()] then -- TODO CONFIGURABLE
-                bidList[#bidList+1] = BuildBidRow(name, response, roster, namedButtonsMode)
+                bidList[#bidList+1] = BuildBidRow(name, response, roster, namedButtonsMode, auction)
             end
         end
     end
@@ -940,7 +942,7 @@ end
 
 local function UpdateCurrentStandings(self)
     local roster = CLM.MODULES.BiddingManager:GetAuctionInfo():GetRoster()
-    if roster:IsProfileInRoster(whoamiGUID) then
+    if roster and roster:IsProfileInRoster(whoamiGUID) then
         local value
         if roster:GetPointType() == CONSTANTS.POINT_TYPE.DKP then
             value = tostring(roster:Standings(whoamiGUID)) .. " " .. CLM.L["DKP"]
@@ -963,7 +965,7 @@ function BiddingManagerGUI:Refresh()
     AceConfigRegistry:NotifyChange(BUTTON_REGISTRY)
     AceConfigDialog:Open(BUTTON_REGISTRY, self.ButtonGroup) -- Refresh the config gui panel
     UpdateUIStructure(self)
-    RefreshItemList(self)
+    self:RefreshItemList()
     UpdateBarInfo(self)
     UpdateCurrentStandings(self)
     self:RefreshBidList()
