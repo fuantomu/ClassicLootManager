@@ -20,7 +20,7 @@ CLM.OPTIONS = {}
 CLM.ALERTS = {}
 CLM.EXTERNAL = {}
 
-CLM.AUTOVERSION = "v3.0.3a"
+CLM.AUTOVERSION = "v3.0.3"
 
 CLM.LOG = LibStub("LibLogger"):New()
 
