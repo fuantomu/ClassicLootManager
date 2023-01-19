@@ -807,8 +807,6 @@ function AuctionManagerGUI:Toggle()
     LOG:Trace("AuctionManagerGUI:Toggle()")
     if not self._initialized then return end
     if self.top:IsVisible() or not CLM.MODULES.ACL:IsTrusted() then
-        -- Award reset on closing BidWindow.
-        -- AuctionManagerGUI:ClearSelectedBid()
         self.top:Hide()
     else
         self:Show()

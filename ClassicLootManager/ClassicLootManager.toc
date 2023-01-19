@@ -4,7 +4,7 @@
 ## Title: |cffdcb749Classic Loot Manager|r
 ## Notes: Robust, DKP and EPGP based Loot Manager system
 ## Author: Lantis
-## Version: v3.0.0
+## Version: v3.0.3
 ## OptionalDeps: LibStub, Gargul, RCLootCouncil_Classic, Ace3, ViragDevTool
 ## X-Donate: https://www.patreon.com/classiclootmanager
 ## X-License: MIT

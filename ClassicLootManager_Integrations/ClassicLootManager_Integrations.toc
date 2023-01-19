@@ -4,7 +4,7 @@
 ## Title: |cffdcb749Classic Loot Manager|r |cff44ee44Integrations|r
 ## Notes: External Integration System for |cffdcb749Classic Loot Manager|r
 ## Author: Lantis
-## Version: v3.0.0
+## Version: v3.0.3
 ## RequiredDeps: ClassicLootManager
 ## OptionalDeps: LibStub
 ## X-Donate: https://www.patreon.com/classiclootmanager

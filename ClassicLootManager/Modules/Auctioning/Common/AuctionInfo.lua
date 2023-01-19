@@ -175,6 +175,8 @@ function AuctionInfo:UpdateRoster(roster)
         return
     end
 
+    if self.roster == roster then return end
+
     UpdateRosterInternal(self, roster)
     UpdateRaidInternal(self, nil)
     UpdateConfigurationInternal(self)
@@ -189,6 +191,9 @@ function AuctionInfo:UpdateRaid(raid)
         LOG:Debug("AuctionInfo:UpdateRaid(): Called during auction. Ignoring.")
         return
     end
+
+    if self.raid == raid then return end
+
     UpdateRaidInternal(self, raid)
     UpdateRosterInternal(self, raid:Roster())
     UpdateConfigurationInternal(self)

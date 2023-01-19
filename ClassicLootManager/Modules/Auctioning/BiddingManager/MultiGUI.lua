@@ -941,6 +941,8 @@ local function UpdateBarInfo(self)
 end
 
 local function UpdateCurrentStandings(self)
+    local auction = CLM.MODULES.BiddingManager:GetAuctionInfo()
+    if not auction then return end
     local roster = CLM.MODULES.BiddingManager:GetAuctionInfo():GetRoster()
     if roster and roster:IsProfileInRoster(whoamiGUID) then
         local value
