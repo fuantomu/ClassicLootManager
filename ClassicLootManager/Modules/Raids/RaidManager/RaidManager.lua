@@ -222,6 +222,18 @@ function RaidManager:ListRaids()
     return self.cache.raids
 end
 
+function RaidManager:GetLastRaid()
+	local last_timestamp = 0
+	local last_key = 0
+    for k,v in pairs(self.cache.raids) do
+		if v:CreatedAt() > last_timestamp and CONSTANTS.RAID_STATUS.FINISHED == v:Status() then
+			last_timestamp = v:CreatedAt()
+			last_key = k
+		end
+	end
+	return self.cache.raids[last_key]
+end
+
 function RaidManager:GetRaidByUid(raidUid)
     return self.cache.raids[raidUid]
 end
@@ -453,6 +465,20 @@ function RaidManager:JoinRaid(raid)
         error("My profile is nil")
     end
     CLM.MODULES.LedgerManager:Submit(CLM.MODELS.LEDGER.RAID.Update:new(raid:UID(), {}, {CLM.MODULES.ProfileManager:GetMyProfile()}), true)
+end
+
+function RaidManager:CalculateSpentPoints(raid)
+    LOG:Trace("RaidManager:CalculateSpentPoints()")
+    if not UTILS.typeof(raid, CLM.MODELS.Raid) then
+        LOG:Message(CLM.L["Missing valid raid"])
+        return
+    end
+    if CLM.MODULES.LedgerManager:IsTimeTraveling() then
+        LOG:Message(CLM.L["Raid management is disabled during time traveling."])
+        return
+    end
+    print("Calculating spent dkp",raid)
+    raid:CalculateSpentPoints()
 end
 
 function RaidManager:AddToStandby(raid, standby)
@@ -736,7 +762,6 @@ end
 function RaidManager:IsMasterLooter(name)
     return self.IsMasterLootSystem and (self.MasterLooter == (name or whoami)) or false
 end
-
 function RaidManager:IsAllowedToAuction(name, relaxed)
     --[==[@debug@
     return true
