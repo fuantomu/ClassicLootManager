@@ -213,6 +213,20 @@ local function BidAllIn(self)
         BidInputValue(self, CONSTANTS.BID_TYPE.MAIN_SPEC)
     end
 end
+
+local function OverrideNextItem(self, auctionItem)
+    -- if (self.nextItem > #self.auctionOrder) then self.nextItem = 1 end
+    local id = auctionItem:GetItemID()
+    for i,itemId in ipairs(self.auctionOrder) do
+        if itemId == id then
+            self.nextItem = i + 1
+            break
+        end
+    end
+    if (self.nextItem > #self.auctionOrder) then self.nextItem = 1 end
+end
+
+
 ------------------------
 --- Options Creation ---
 ------------------------
@@ -231,8 +245,14 @@ local buttonOptions = {
     args = {}
 }
 
-local numRows
+local emptyTierValues = {}
+do
+    for _, tier in ipairs(CONSTANTS.SLOT_VALUE_TIERS_ORDERED) do
+        emptyTierValues[tier] = 0
+    end
+end
 
+local numRows
 local function GenerateValueButtonsAuctionOptions(self, auction)
     local itemValueMode = auction and auction:GetMode() or CONSTANTS.ITEM_VALUE_MODE.SINGLE_PRICED
     local useOS = auction and auction:GetUseOS()
@@ -322,7 +342,7 @@ local function GenerateValueButtonsAuctionOptions(self, auction)
         doDisplayValue = (function(value) return (value > 0) end)
     end
 
-    local values = self.auctionItem and self.auctionItem:GetValues() or {}
+    local values = self.auctionItem and self.auctionItem:GetValues() or emptyTierValues
     if usedTiers then
         local alreadyExistingValues = {}
         local numButtons = 0
@@ -405,7 +425,7 @@ local function GenerateNamedButtonsAuctionOptions(self, auction)
         }
     end
 
-    local values = self.auctionItem and self.auctionItem:GetValues() or {}
+    local values = self.auctionItem and self.auctionItem:GetValues() or emptyTierValues
     if usedTiers then
         for _,tier in ipairs(usedTiers) do
             local value = tonumber(values[tier]) or 0
@@ -579,11 +599,14 @@ local function CreateItemList(self)
     })
     ItemList:RegisterEvents({
         OnClick = (function(rowFrame, cellFrame, data, cols, row, realrow, column, table, button, ...)
+            if not (row or realrow) then return true end -- Disable sort
             UTILS.LibStSingleSelectClickHandler(table, nil, rowFrame, cellFrame, data, cols, row, realrow, column, table, button, ...)
             local _, selection = next(table:GetSelection())
             local rowData = table:GetRow(selection)
             if rowData then
-                self:SetVisibleAuctionItem(rowData.cols[2].value)
+                local auctionItem = data[realrow].cols[column].item
+                OverrideNextItem(self, auctionItem)
+                self:SetVisibleAuctionItem(auctionItem)
                 self:Refresh()
             end
             return true
@@ -785,7 +808,7 @@ function BiddingManagerGUI:RefreshItemList()
                 iconColor = colorGold
                 note = CLM.L["Bid denied!"]
             end
-            itemList[#itemList+1] = { cols = { {value = id, iconColor = iconColor, note = note}, {value = auctionItem} }}
+            itemList[#itemList+1] = { cols = { {value = id, item = auctionItem, iconColor = iconColor, note = note}}}
         end
         self.ItemList:SetData(itemList)
     end
@@ -818,15 +841,26 @@ function BiddingManagerGUI:Advance()
     self:Refresh()
 end
 
-local toggleCb = (function() BiddingManagerGUI:Toggle() end)
-function BiddingManagerGUI:StartAuction()
+function BiddingManagerGUI:BuildBidOrder()
     local auction = CLM.MODULES.BiddingManager:GetAuctionInfo()
+    local previousSize = self.auctionOrder and #self.auctionOrder or 0
+
     self.auctionOrder = {}
+    self.nextItem = 1
+    if not auction then return end
+
     for id in pairs(auction:GetItems()) do
         self.auctionOrder[#self.auctionOrder+1] = id
     end
-    self.nextItem = 1
 
+    if previousSize ~= #self.auctionOrder then
+        self:Advance()
+    end
+end
+
+local toggleCb = (function() BiddingManagerGUI:Toggle() end)
+function BiddingManagerGUI:StartAuction()
+    self:BuildBidOrder()
     self:Advance()
     -- Hide Test Bar if present
     HideTestBar(self)
@@ -858,6 +892,7 @@ end
 
 function BiddingManagerGUI:SetVisibleAuctionItem(auctionItem)
     self.auctionItem = auctionItem
+    if not auctionItem then return end
     local values = self.auctionItem:GetValues()
     SetInputValue(self, values[CONSTANTS.SLOT_VALUE_TIER.BASE])
 end
@@ -924,6 +959,7 @@ end
 local function AutoUpdate(self)
     if CLM.MODULES.BiddingManager:GetAutoUpdateBidValue() then
         local item = self.auctionItem
+        if not item then return end
         local auction = CLM.MODULES.BiddingManager:GetAuctionInfo()
         if item and auction then
             local value = item:GetHighestBid() + auction:GetIncrement()
