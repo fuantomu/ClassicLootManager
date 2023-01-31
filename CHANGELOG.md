@@ -1,3 +1,23 @@
+# Classic Loot Manager v3.1.3
+## Changes
+### Hide in combat
+Bidding UI will now automatically hide in combat and show when out of combat. You can disable this behavior in configuration.
+### Bidding UI Config reset
+Auto update bid values and close on bid settings were reset due to database restructure needed for hiding in combat. Be sure to re-check your settings!
+### Auction
+Another batch of auction bugs fixes.
+### Rounding
+Fixed missing rounding in point statistics.
+# Classic Loot Manager v3.1.2
+## Fixes
+### Tax
+Tax is now properly applied.
+### Invalid bid
+Invalid bid marking after award should now work properly.
+### History UI
+You can now link history entry in chat. You can't select multiple entries anymore.
+### Auctioning UI
+Auctioning UI won't open anymore outside UI when modifier-clicking on link or items.
 # Classic Loot Manager v3.1.1
 ## Hotfix
 ### Bidding UI

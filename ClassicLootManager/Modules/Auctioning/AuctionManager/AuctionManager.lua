@@ -173,6 +173,8 @@ end
 local function HookAuctionFilling(self)
     CLM.MODULES.Hooks:RegisterModifiedItemLinkClickHandler(function(modifiers, itemLink)
         if CLM.GlobalConfigs:GetModifierCombination() ~= modifiers then return end
+        if not CLM.MODULES.RaidManager:IsInRaid() then return end
+
         if not itemLink then return end
         self:AddItemByLink(itemLink)
         CLM.GUI.AuctionManager:Show()
@@ -723,7 +725,10 @@ end
 -- BIDS
 
 local function ValidateBid(auction, item, name, userResponse)
-    if not item then return false, CONSTANTS.AUCTION_COMM.DENY_BID_REASON.INVALID_ITEM end
+    if not item then
+        LOG:Warning("Received bid for not auctioned item from [%s]", name)
+        return false, CONSTANTS.AUCTION_COMM.DENY_BID_REASON.INVALID_ITEM
+    end
     local auctionType = auction:GetType()
     local itemValueMode = auction:GetMode()
     local roster = auction:GetRoster()
@@ -848,7 +853,7 @@ local function ValidateBidLimited(auction, item, name, userResponse)
     local minimumPoints = auction:GetMinimumPoints()
     if current < minimumPoints then return false, CONSTANTS.AUCTION_COMM.DENY_BID_REASON.BELOW_MIN_BIDDER end
     -- allow negative standings after bid
-    local new = current - value
+    local new = UTILS.round(current - value, auction:GetRounding())
     if (new < minimumPoints) and not auction:GetAllowBelowMinStandings() and (roster:GetPointType() == CONSTANTS.POINT_TYPE.DKP) then return false, CONSTANTS.AUCTION_COMM.DENY_BID_REASON.NEGATIVE_STANDING_AFTER end
     -- accept otherwise
     return true
@@ -899,7 +904,7 @@ function AuctionManager:UpdateBid(name, itemId, userResponse)
         AnnounceBid(auction, item, name, userResponse, newHighBid)
         SendBidAccepted(item:GetItemID(), name)
     else
-        SendBidDenied(item:GetItemID(), name, reason)
+        SendBidDenied(itemId, name, reason)
     end
 
     -- TODO update Bids only

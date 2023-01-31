@@ -436,14 +436,27 @@ function Roster:GetConfiguration(option)
     return self.configuration:Get(option)
 end
 
+local configurationCallbacks = {
+    weeklyReset = function(self, value)
+        self.attendanceTracker:UpdateWeeklyReset(value)
+    end,
+    minGP = function(self, value)
+        for _, pointInfo in pairs(self.pointInfo) do
+            pointInfo.spent = mmax(pointInfo.spent, self.configuration._.minGP)
+        end
+    end,
+    roundDecimals = function(self, value)
+        for _, pointInfo in pairs(self.pointInfo) do
+            pointInfo:SetRounding(value)
+        end
+    end
+}
+
 function Roster:SetConfiguration(option, value)
     self.configuration:Set(option, value)
-    if option == "weeklyReset" then
-        self.attendanceTracker:UpdateWeeklyReset(value)
-    elseif option == "minGP" then
-        for GUID, pointInfo in pairs(self.pointInfo) do
-            self.pointInfo[GUID].spent = mmax(pointInfo.spent, self.configuration._.minGP)
-        end
+    local configurationCb = configurationCallbacks[option]
+    if configurationCb then
+        configurationCb(self, value)
     end
 end
 
