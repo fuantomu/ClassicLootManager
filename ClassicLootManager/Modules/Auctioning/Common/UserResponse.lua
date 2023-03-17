@@ -5,9 +5,6 @@ local  _, CLM = ...
 local CONSTANTS = CLM.CONSTANTS
 local UTILS     = CLM.UTILS
 -- ------------------------------- --
-
-local setmetatable, ipairs = setmetatable, ipairs
-
 local assertType = UTILS.assertType
 
 local UserResponse = {} -- UserResponse
@@ -27,7 +24,7 @@ function UserResponse:New(valueOrObject, responseType, upgradedItems)
     o.type = CONSTANTS.BID_TYPES[responseType] and responseType or CONSTANTS.BID_TYPE.MAIN_SPEC
     o.roll = 0
     o.upgradedItems = {}
-    o:SetUpgradedItems(upgradedItems)
+    o:SetUpgradedItems(upgradedItems or {})
 
     return o
 end

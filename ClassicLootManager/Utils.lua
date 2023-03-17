@@ -10,19 +10,9 @@ local LibDD = LibStub:GetLibrary("LibUIDropDownMenu-4.0")
 UTILS.LibDD = LibDD
 local DumpTable = LibStub("EventSourcing/Util").DumpTable
 
-local pairs, ipairs = pairs, ipairs
-local ssub, supper, slower, sformat, sfind = string.sub, string.upper, string.lower, string.format, string.find
-local sgsub = string.gsub
-local mfloor = math.floor
-local tostring, tonumber = tostring, tonumber
-local tinsert = table.insert
-local print, type, setmetatable, getmetatable, rawequal = print, type, setmetatable, getmetatable, rawequal
-local GetUnitName, UnitGUID, GetTalentTabInfo = GetUnitName, UnitGUID, GetTalentTabInfo
-local GetTalentGroupRole, GetActiveTalentGroup = GetTalentGroupRole, GetActiveTalentGroup
-
 local function capitalize(string)
     string = string or ""
-    return supper(ssub(string, 1,1)) .. slower(ssub(string, 2))
+    return string.upper(string.sub(string, 1,1)) .. string.lower(string.sub(string, 2))
 end
 
 local numberToClass = {
@@ -112,18 +102,18 @@ end
 local GetClassColor = UTILS.GetClassColor
 
 function UTILS.ColorCodeText(text, color)
-    return sformat("|cff%s%s|r", color, text);
+    return string.format("|cff%s%s|r", color, text);
 end
 local ColorCodeText = UTILS.ColorCodeText
 
-function UTILS.ColorCodeClass(className)
+function UTILS.ColorCodeAndLocalizeClass(className)
     return ColorCodeText(CLM.L[className], GetClassColor(className).hex);
 end
 
 local colorCodedClassList = {}
 do
     for _,class in pairs(classOrdered) do
-        tinsert(colorCodedClassList, UTILS.ColorCodeClass(class))
+        tinsert(colorCodedClassList, UTILS.ColorCodeAndLocalizeClass(class))
     end
 end
 function UTILS.GetColorCodedClassList()
@@ -145,7 +135,7 @@ function UTILS.ColorCodeByPercentage(percentage)
     elseif percentage > 50 then
         red = UTILS.round(5.1*(100 - percentage), 0) -- (2*255)*(100 - percentage)/100,
     end
-    return sformat("|cff%s%s|r", sformat("%02x%02x%02x", red, green, blue), percentage)
+    return string.format("|cff%s%s|r", string.format("%02x%02x%02x", red, green, blue), percentage)
 end
 
 function UTILS.GetColorByPercentage(percentage)
@@ -163,7 +153,7 @@ function UTILS.GetColorByPercentage(percentage)
 end
 
 function UTILS.RemoveColorCode(s)
-    return ssub(s or "", 11, -3)
+    return string.sub(s or "", 11, -3)
 end
 
 local RemoveColorCode = UTILS.RemoveColorCode
@@ -174,7 +164,7 @@ local RemoveColorCode = UTILS.RemoveColorCode
 -- i: integer array = {a = AA, r = RR, g = GG, b = BB } from 0 to 255
 -- f: float array   = {a = AA, r = RR, g = GG, b = BB } from 0 to 1
 function UTILS.GetColorFromLink(itemLink, format)
-    local _, _, a, r, g, b = sfind(itemLink, "|c(%x%x)(%x%x)(%x%x)(%x%x)|.*")
+    local _, _, a, r, g, b = string.find(itemLink, "|c(%x%x)(%x%x)(%x%x)(%x%x)|.*")
     local color = {
         a = a or "",
         r = r or "",
@@ -182,7 +172,7 @@ function UTILS.GetColorFromLink(itemLink, format)
         b = b or ""
     }
     if format == "s" then
-        return sformat("%s%s%s%s", color.a, color.r, color.g, color.b)
+        return string.format("%s%s%s%s", color.a, color.r, color.g, color.b)
     else
         if format ~= "s" then
             for k,v in pairs(color) do
@@ -200,9 +190,9 @@ function UTILS.GetColorFromLink(itemLink, format)
 end
 
 function UTILS.GetItemIdFromLink(itemLink)
-    -- local _, _, Color, Ltype, Id, Enchant, Gem1, Gem2, Gem3, Gem4, Suffix, Unique, LinkLvl, Name = sfind(itemLink, "|?c?f?f?(%x*)|?H?([^:]*):?(%d+):?(%d*):?(%d*):?(%d*):?(%d*):?(%d*):?(%-?%d*):?(%-?%d*):?(%d*):?(%d*):?(%-?%d*)|?h?%[?([^%[%]]*)%]?|?h?|?r?")
+    -- local _, _, Color, Ltype, Id, Enchant, Gem1, Gem2, Gem3, Gem4, Suffix, Unique, LinkLvl, Name = string.find(itemLink, "|?c?f?f?(%x*)|?H?([^:]*):?(%d+):?(%d*):?(%d*):?(%d*):?(%d*):?(%d*):?(%-?%d*):?(%-?%d*):?(%d*):?(%d*):?(%-?%d*)|?h?%[?([^%[%]]*)%]?|?h?|?r?")
     itemLink = itemLink or ""
-    local _, _, _, _, itemId = sfind(itemLink, "|?c?f?f?(%x*)|?H?([^:]*):?(%d+).*")
+    local _, _, _, _, itemId = string.find(itemLink, "|?c?f?f?(%x*)|?H?([^:]*):?(%d+).*")
     return tonumber(itemId) or 0
 end
 
@@ -264,7 +254,7 @@ function UTILS.NewStorageQualifiedObject(storage, o)
 end
 
 function UTILS.GenerateItemLink(itemId)
-    return sformat("item:%d:0:0:0:0:0:0:0:0:0:0:0:0", itemId)
+    return string.format("item:%d:0:0:0:0:0:0:0:0:0:0:0:0", itemId)
 end
 
 function UTILS.Set(t)
@@ -344,14 +334,14 @@ function UTILS.empty(object)
 end
 
 function UTILS.getIntegerGuid(GUID)
-    return tonumber(ssub(GUID, -8), 16)
+    return tonumber(string.sub(GUID, -8), 16)
 end
 local getIntegerGuid = UTILS.getIntegerGuid
 
-local playerGUID = UnitGUID("player")
-local GUIDPrefix = ssub(playerGUID, 1, -9)
+local playerGUID = UnitGUID("player") or ""
+local GUIDPrefix = string.sub(playerGUID, 1, -9)
 function UTILS.getGuidFromInteger(int)
-    return GUIDPrefix .. sformat("%08X", tonumber(int) or 0)
+    return GUIDPrefix .. string.format("%08X", tonumber(int) or 0)
 end
 
 local playerName = UTILS.GetUnitName("player")
@@ -574,7 +564,7 @@ end
 
 function UTILS.WeekNumber(unixtimestamp, offset)
     offset = offset or 0
-    local week = 1 + mfloor((unixtimestamp - offset) / 604800)
+    local week = 1 + math.floor((unixtimestamp - offset) / 604800)
     if week < 1 then week = 1 end
     return week
 end
@@ -593,16 +583,16 @@ end
 
 function UTILS.round(number, decimals)
     local factor = 10 ^ (decimals or 0)
-    return mfloor(number * factor + 0.5) / factor
+    return math.floor(number * factor + 0.5) / factor
 end
 
-function UTILS.GetMyTalents()
-    local one, two, three
-    _, _, one   = GetTalentTabInfo(1)
-    _, _, two   = GetTalentTabInfo(2)
-    _, _, three = GetTalentTabInfo(3)
-    return one, two, three
-end
+-- function UTILS.GetMyTalents()
+--     local one, two, three
+--     _, _, one   = GetTalentTabInfo(1)
+--     _, _, two   = GetTalentTabInfo(2)
+--     _, _, three = GetTalentTabInfo(3)
+--     return one, two, three
+-- end
 
 function UTILS.GetMyRole()
     return GetTalentGroupRole(GetActiveTalentGroup())
@@ -611,14 +601,14 @@ end
 function UTILS.IsTooltipTextRed(text)
     if text and text:GetText() then
         local r,g,b = text:GetTextColor()
-        return mfloor(r*256) >= 255 and mfloor(g*256) == 32 and mfloor(b*256) == 32
+        return math.floor(r*256) >= 255 and math.floor(g*256) == 32 and math.floor(b*256) == 32
     end
     return false
 end
 
 function UTILS.Trim(text)
     text = text or ""
-    return (sgsub(text, "^[%s,]*(.-)[%s,]*$", "%1"))
+    return (string.gsub(text, "^[%s,]*(.-)[%s,]*$", "%1"))
 end
 
 function UTILS.LibStCompareSortWrapper(modifierFn)
@@ -886,6 +876,17 @@ function UTILS.Saturate(value, low, high)
     return value
 end
 
+local defaultCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 -_=[];:<>,.?"
+function UTILS.randomString(length, customCharset)
+    local charset = customCharset or defaultCharset
+    local charsetLength = #charset
+    local result = ""
+    while #result < length do
+        local char = math.random(1, charsetLength)
+        result = result .. strsub(charset, char, char)
+    end
+    return result
+end
 
 CONSTANTS.ITEM_QUALITY = {
     [0] = ColorCodeText(CLM.L["Poor"], "9d9d9d"),

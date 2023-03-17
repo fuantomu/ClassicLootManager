@@ -8,12 +8,6 @@ if not AceGUI or (AceGUI:GetWidgetVersion(Type) or 0) >= Version then return end
 local ScrollingTable = LibStub("ScrollingTable")
 if not ScrollingTable then return end
 
--- Lua APIs
-local pairs = pairs
-
--- WoW APIs
-local CreateFrame, UIParent = CreateFrame, UIParent
-
 
 --[[-----------------------------------------------------------------------------
 Support functions
@@ -104,7 +98,7 @@ local methods = {
         self.st.frame:SetBackdropColor(...)
     end,
     ["SetHeaderless"] = function(self, ...)
-        SetHeaderless(self, ...)
+        SetHeaderless(self)
     end,
     ["HideScroll"] = function(self, ...)
         self.metadata.hideScroll = true

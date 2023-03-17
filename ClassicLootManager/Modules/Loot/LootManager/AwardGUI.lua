@@ -6,8 +6,6 @@ local CONSTANTS = CLM.CONSTANTS
 local UTILS     = CLM.UTILS
 -- ------------------------------- --
 
-local tsort, sformat = table.sort, string.format
-
 local AceGUI = LibStub("AceGUI-3.0")
 local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
@@ -61,7 +59,7 @@ local function UpdateOptions(self)
                     profileList[#profileList + 1] = profile:Name()
                 end
             end
-            tsort(profileList)
+            table.sort(profileList)
         end
     end
 
@@ -146,12 +144,8 @@ local function UpdateOptions(self)
             type = "execute",
             func = (function()
                 local success, _ = CLM.MODULES.LootManager:AwardItem(self.roster, self.awardPlayer, self.itemLink, self.itemId, self.awardValue)
-                if success and not CLM.MODULES.AutoAssign:IsIgnored(self.itemId) then
-                    if CLM.MODULES.AuctionManager:GetAutoAssign() and self.lootWindowIsOpen then
-                        CLM.MODULES.AutoAssign:GiveMasterLooterItem(self.itemId, self.awardPlayer)
-                    elseif CLM.MODULES.AuctionManager:GetAutoTrade() then
-                        CLM.MODULES.AutoAssign:Track(self.itemId, self.awardPlayer)
-                    end
+                if success then
+                    CLM.MODULES.AutoAssign:Handle(self.itemId, self.awardPlayer)
                 end
                 self.itemLink = nil
                 self.itemId = 0
@@ -160,7 +154,7 @@ local function UpdateOptions(self)
                 self:Refresh()
             end),
             confirm = (function()
-                return sformat(
+                return string.format(
                     CLM.L["Are you sure, you want to award %s to %s for %s %s?"],
                     self.itemLink,
                     UTILS.ColorCodeText(self.awardPlayer, "FFD100"),

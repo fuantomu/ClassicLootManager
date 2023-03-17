@@ -8,8 +8,6 @@ local UTILS     = CLM.UTILS
 
 local LibCandyBar = LibStub("LibCandyBar-3.0")
 
-local setmetatable, GetAddOnInfo  = setmetatable, GetAddOnInfo
-
 local _, _, _, isElvUI = GetAddOnInfo("ElvUI")
 
 local BiddingTimerBar = {} -- BiddingTimerBar
@@ -119,9 +117,10 @@ function BiddingTimerBar:UpdateInfo(item)
     if item:GetNote():len() > 0 then
         note = "(" .. item:GetNote() .. ")"
     end
-    self.bar:SetLabel(item:GetItemLink() .. " " .. note)
+    local link = item:GetItemLink() or ""
+    self.bar:SetLabel(link .. " " .. note)
 
-    local _, _, _, _, icon = GetItemInfoInstant(item:GetItemLink())
+    local _, _, _, _, icon = GetItemInfoInstant(link)
     self.bar:SetIcon(icon)
 end
 

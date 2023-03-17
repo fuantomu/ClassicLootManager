@@ -11,16 +11,8 @@ local LOG       = CLM.LOG
 local UTILS     = CLM.UTILS
 -- ------------------------------- --
 
-local ipairs = ipairs
-local BIND_TRADE_TIME_REMAINING, ITEM_SOULBOUND, ERR_TRADE_COMPLETE  = BIND_TRADE_TIME_REMAINING, ITEM_SOULBOUND, ERR_TRADE_COMPLETE
-local sgsub, sfind = string.gsub, string.find
-local tinsert, tremove = table.insert, table.remove
-local C_TimerAfter, GetTradePlayerItemLink = C_Timer.After, GetTradePlayerItemLink
-local GetNumLootItems, GetLootSlotInfo, GetItemInfoInstant, GetLootSlotLink, GetNumGroupMembers, GetMasterLootCandidate, GiveMasterLoot = GetNumLootItems, GetLootSlotInfo, GetItemInfoInstant, GetLootSlotLink, GetNumGroupMembers, GetMasterLootCandidate, GiveMasterLoot
-local UnitName = UnitName
-
 local function ScanTooltip(self)
-    local query = sgsub(BIND_TRADE_TIME_REMAINING, "%%s", ".*")
+    local query = string.gsub(BIND_TRADE_TIME_REMAINING, "%%s", ".*")
     local lineWithTimer
     for i = 1, self.fakeTooltip:NumLines() do
         local line = _G["CLMAutoAssignBagItemCheckerFakeTooltipTextLeft" .. i]
@@ -29,7 +21,7 @@ local function ScanTooltip(self)
             if line == ITEM_SOULBOUND then
                 self.itemInfo.soulbound = true
             end
-            if sfind(line, query) then
+            if string.find(line, query) then
                 lineWithTimer = line
                 break
             end
@@ -156,7 +148,7 @@ local function HandleTradeShow(self)
         for _, itemId in ipairs(self.tracking[self.lastTradeTarget]) do
             if foundItems[itemId] and #foundItems[itemId] > 0 then
                 local loc = tremove(foundItems[itemId])
-                C_TimerAfter(0.5*totalQueued, function()
+                C_Timer.After(0.5*totalQueued, function()
                     C_Container.UseContainerItem(loc.bag, loc.slot)
                 end)
                 totalQueued = totalQueued + 1
@@ -185,6 +177,8 @@ local function HandleTradeSuccess(self)
 end
 
 
+local lootWindowIsOpen = false
+
 local AutoAssign = {}
 function AutoAssign:Initialize()
     LOG:Trace("AutoAssign:Initialize()")
@@ -200,7 +194,7 @@ function AutoAssign:Initialize()
         end)
         if not self.lastTradeTarget then
              -- NPC Because that's how the engine holds the trade peer
-            self.lastTradeTarget = UnitName("NPC")
+            self.lastTradeTarget = UnitName("npc")
         end
         if not self.lastTradeTarget then return end
         HandleTradeShow(self)
@@ -216,6 +210,8 @@ function AutoAssign:Initialize()
         end
         self.lastTradeTarget = nil
     end))
+    CLM.MODULES.EventManager:RegisterWoWEvent({"LOOT_OPENED"}, (function() lootWindowIsOpen = true end))
+    CLM.MODULES.EventManager:RegisterWoWEvent({"LOOT_CLOSED"}, (function() lootWindowIsOpen = false end))
     CLM.MODULES.EventManager:RegisterEvent(CLM.CONSTANTS.EVENTS.GLOBAL_LOOT_REMOVED, function(_, data)
         AutoAssign:Remove(data.id, data.name)
     end)
@@ -241,6 +237,7 @@ function AutoAssign:GiveMasterLooterItem(itemId, player)
             local slotItemId = GetItemInfoInstant(GetLootSlotLink(itemIndex))
             if slotItemId == itemId then
                 for playerIndex = 1, GetNumGroupMembers() do
+---@diagnostic disable-next-line: redundant-parameter
                     if (GetMasterLootCandidate(itemIndex, playerIndex) == player) then
                         GiveMasterLoot(itemIndex, playerIndex)
                         return
@@ -259,6 +256,8 @@ function AutoAssign:Track(itemId, player)
     end
     -- Update
     tinsert(self.tracking[player], itemId)
+    --
+    CLM.GUI.TradeList:Refresh(true)
 end
 
 function AutoAssign:Remove(itemId, player)
@@ -274,6 +273,36 @@ function AutoAssign:Remove(itemId, player)
             break
         end
     end
+    CLM.GUI.TradeList:Refresh(true)
+end
+
+function AutoAssign:GetTracked()
+    return self.tracking
+end
+
+function AutoAssign:Handle(itemId, target)
+    if not self:IsIgnored(itemId) then
+        if CLM.MODULES.AuctionManager:GetAutoAssign() and lootWindowIsOpen then
+            self:GiveMasterLooterItem(itemId, target)
+        elseif CLM.MODULES.AuctionManager:GetAutoTrade() then
+            self:Track(itemId, target)
+        end
+    end
+end
+
+function AutoAssign:InitiateTrade(target)
+    if lootWindowIsOpen then return end
+    if TradeFrame:IsShown() then return end
+    InitiateTrade(target)
 end
 
 CLM.MODULES.AutoAssign = AutoAssign
+--@do-not-package@
+function AutoAssign:FakeTrack(num)
+    local target = UTILS.RemoveServer(UnitName("player"))
+    for _=1,(num or 25) do
+        local id = math.random(10000,50000)
+        self:Track(id, target)
+    end
+end
+--@end-do-not-package@

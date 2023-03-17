@@ -6,8 +6,6 @@ local  _, CLM = ...
 -- local UTILS     = CLM.UTILS
 -- ------------------------------- --
 
-local setmetatable = setmetatable
-
 local getGuidFromInteger = CLM.UTILS.getGuidFromInteger
 
 local Loot = {}
@@ -40,7 +38,14 @@ function Loot:Timestamp()
 end
 
 function Loot:OwnerGUID()
-    return getGuidFromInteger(self.entry:profile())
+    if not self.ownerGuid then
+        if self.entry.profile then
+            self.ownerGuid = getGuidFromInteger(self.entry:profile())
+        else
+            self.ownerGuid = ""
+        end
+    end
+    return self.ownerGuid
 end
 
 function Loot:Creator()

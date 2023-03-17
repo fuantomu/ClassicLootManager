@@ -6,10 +6,6 @@ local LOG       = CLM.LOG
 local UTILS     = CLM.UTILS
 -- ------------------------------- --
 
-local pairs, tsort = pairs, table.sort
-
--- Libs
-
 local AceGUI = LibStub("AceGUI-3.0")
 local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
@@ -93,7 +89,7 @@ local function CreateTabsWidget(self, content)
         }
     end
 
-    tsort(tabs, (function(a, b) return a.order < b.order end))
+    table.sort(tabs, (function(a, b) return a.order < b.order end))
 
     self.selectedTab = "standings"
     tabsWidget:SetTabs(tabs)

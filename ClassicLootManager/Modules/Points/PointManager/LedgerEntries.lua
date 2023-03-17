@@ -6,8 +6,6 @@ local  _, CLM = ...
 local UTILS     = CLM.UTILS
 -- ------------------------------- --
 
-local tonumber, tostring = tonumber, tostring
-
 local mergeLists = UTILS.mergeLists
 local CreateGUIDList = UTILS.CreateGUIDList
 
@@ -149,7 +147,7 @@ function Set:new(rosterUid, playerList, value, reason, note, spent)
     o.p = CreateGUIDList(playerList)
     o.v = tonumber(value) or 0
     o.e = tonumber(reason) or 0
-    o.t = tostring(note)
+    o.t = note and tostring(note) or ""
     o.n = spent and true or false
     return o
 end

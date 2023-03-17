@@ -9,11 +9,6 @@ local UTILS     = CLM.UTILS
 local json = LibStub:GetLibrary("LibJsonLua")
 local XML = LibStub:GetLibrary("LibLuaXML")
 
-local pairs, ipairs = pairs, ipairs
-local tonumber, date = tonumber, date
-local tinsert = table.insert
-local setmetatable = setmetatable
-
 local getGuidFromInteger = UTILS.getGuidFromInteger
 
 local function buildTMBLine(item)
@@ -104,6 +99,9 @@ local DATA_BUILDERS = {
                 local roster_data = {
                     uid = roster:UID(),
                     name = CLM.MODULES.RosterManager:GetRosterNameByUid(roster:UID()),
+                    type = roster:GetPointType(),
+                    config = roster.configuration._,
+                    fieldNames = roster.fieldNames,
                     standings = {
                         player = {}
                     }
@@ -116,6 +114,7 @@ local DATA_BUILDERS = {
                                 guid = GUID,
                                 name = profile:Name(),
                                 class = profile:Class(),
+                                classInternal = profile:ClassInternal(),
                                 spec = profile:SpecString(),
                                 role = profile:Role(),
                                 points = roster:Standings(GUID),
@@ -131,6 +130,9 @@ local DATA_BUILDERS = {
                 local roster_data = {
                     uid = roster:UID(),
                     name = CLM.MODULES.RosterManager:GetRosterNameByUid(roster:UID()),
+                    type = roster:GetPointType(),
+                    config = roster.configuration._,
+                    fieldNames = roster.fieldNames,
                     standings = {
                         player = {}
                     }
@@ -164,6 +166,8 @@ local DATA_BUILDERS = {
                 local roster_data = {
                     uid = roster:UID(),
                     name = CLM.MODULES.RosterManager:GetRosterNameByUid(roster:UID()),
+                    type = roster:GetPointType(),
+                    config = roster.configuration._,
                     lootHistory = {
                         item = {}
                     }
@@ -194,6 +198,8 @@ local DATA_BUILDERS = {
                 local roster_data = {
                     uid = roster:UID(),
                     name = CLM.MODULES.RosterManager:GetRosterNameByUid(roster:UID()),
+                    type = roster:GetPointType(),
+                    config = roster.configuration._,
                     lootHistory = {
                         item = {}
                     }
@@ -229,6 +235,8 @@ local DATA_BUILDERS = {
                 local roster_data = {
                     uid = roster:UID(),
                     name = CLM.MODULES.RosterManager:GetRosterNameByUid(roster:UID()),
+                    type = roster:GetPointType(),
+                    config = roster.configuration._,
                     pointHistory = {
                         point = {}
                     }
@@ -258,6 +266,8 @@ local DATA_BUILDERS = {
                 local roster_data = {
                     uid = roster:UID(),
                     name = CLM.MODULES.RosterManager:GetRosterNameByUid(roster:UID()),
+                    type = roster:GetPointType(),
+                    config = roster.configuration._,
                     pointHistory = {
                         point = {}
                     }

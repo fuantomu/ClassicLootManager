@@ -6,8 +6,6 @@ local CONSTANTS = CLM.CONSTANTS
 local UTILS     = CLM.UTILS
 -- ------------------------------- --
 
-local sformat = string.format
-
 local ScrollingTable = LibStub("ScrollingTable")
 local AceGUI = LibStub("AceGUI-3.0")
 local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
@@ -329,7 +327,7 @@ local function GenerateValueButtonsAuctionOptions(self, auction)
                 if GetAdvanceOnBid(self) then self:Advance() end
                 if GetCloseOnBid(self) then self:Toggle() end
             end),
-            width = (useOS and 1 or 2)*rowMultiplier*0.3,
+            width = (useOS and 1 or 2)*rowMultiplier*(isElvUI and 0.29 or 0.3),
             order = 4
         },
     }
@@ -343,7 +341,7 @@ local function GenerateValueButtonsAuctionOptions(self, auction)
                 if GetAdvanceOnBid(self) then self:Advance() end
                 if GetCloseOnBid(self) then self:Toggle() end
             end),
-            width = rowMultiplier*0.3,
+            width = rowMultiplier*(isElvUI and 0.29 or 0.3),
             order = 5
         }
     end
@@ -432,7 +430,7 @@ local function GenerateValueButtonsAuctionOptions(self, auction)
             local width = generateButtonOptions[CONSTANTS.SLOT_VALUE_TIER.BASE] and (rowMultiplier/2) or rowMultiplier
             generateButtonOptions["all_in"] = {
                 name = CLM.L["All In"],
-                desc = sformat(CLM.L["Bid your current DKP (%s)."], ""),
+                desc = string.format(CLM.L["Bid your current DKP (%s)."], ""),
                 type = "execute",
                 func = (function()
                     BidAllIn(self)
@@ -850,6 +848,7 @@ function BiddingManagerGUI:RefreshItemList()
     local auction = CLM.MODULES.BiddingManager:GetAuctionInfo()
     if auction then
         local itemList = {}
+        local current = self.auctionItem
         for id, auctionItem in pairs(auction:GetItems()) do
             local iconColor, note
             if not auctionItem:GetCanUse() then
@@ -866,6 +865,9 @@ function BiddingManagerGUI:RefreshItemList()
             elseif auctionItem:BidDenied() then
                 iconColor = colorGold
                 note = CLM.L["Bid denied!"]
+            end
+            if current and current:GetItemID() == auctionItem:GetItemID() then
+                iconColor = colorTurquoise
             end
             itemList[#itemList+1] = { cols = { {value = id, item = auctionItem, iconColor = iconColor, note = note}}}
         end
@@ -911,7 +913,6 @@ end
 function BiddingManagerGUI:Advance()
     if (self.nextItem > #self.auctionOrder) then self.nextItem = 1 end
     local auction = CLM.MODULES.BiddingManager:GetAuctionInfo()
-
     self:SetVisibleAuctionItem(auction:GetItem(self.auctionOrder[self.nextItem]))
     self.nextItem = self.nextItem + 1
     self:Refresh()
@@ -919,7 +920,6 @@ end
 
 function BiddingManagerGUI:BuildBidOrder()
     local auction = CLM.MODULES.BiddingManager:GetAuctionInfo()
-    local previousSize = self.auctionOrder and #self.auctionOrder or 0
 
     self.auctionOrder = {}
     self.nextItem = 1
@@ -929,15 +929,12 @@ function BiddingManagerGUI:BuildBidOrder()
         self.auctionOrder[#self.auctionOrder+1] = id
     end
 
-    if previousSize ~= #self.auctionOrder then
-        self:Advance()
-    end
+    self:Advance()
 end
 
 local toggleCb = (function() BiddingManagerGUI:Toggle() end)
 function BiddingManagerGUI:StartAuction()
     self:BuildBidOrder()
-    self:Advance()
     -- Hide Test Bar if present
     HideTestBar(self)
     -- Build Bar
@@ -983,7 +980,15 @@ function BiddingManagerGUI:SetVisibleAuctionItem(auctionItem)
     self.auctionItem = auctionItem
     if not auctionItem then return end
     local values = self.auctionItem:GetValues()
-    SetInputValue(self, values[CONSTANTS.SLOT_VALUE_TIER.BASE])
+    local bid = self.auctionItem:GetBid()
+    local value
+    if bid then
+        value = bid:Value()
+    else
+        value = values[CONSTANTS.SLOT_VALUE_TIER.BASE]
+    end
+
+    SetInputValue(self, value)
 end
 
 local function BuildBidRow(name, response, roster, namedButtonMode, auction)

@@ -1,3 +1,49 @@
+# Classic Loot Manager v3.3.3
+## Fixes
+### Import
+Import should no longer sync improperly due to missing note.
+### Raid
+Raid names are now limited to 128 characters. Zalán.
+### Multipliers
+Multipliers configuration will now work using any Locale.
+# Classic Loot Manager v3.3.2
+## Fixes
+### Roster configuration
+Assistants no longer can modify roster options.
+### Bidding UI
+Fixed timer bar bug blocking auctions display.
+# Classic Loot Manager v3.3.0
+## Features
+### Rolling
+You can now allow players in your raid to `/roll` for an item as a separte or additional step in your auctioning process. This is a very simple mechanism to enhance the existing built-in rolling.
+## Fixes
+### Dynamic Item value mode
+Dynamic ilvl value calculation is now fixed for Tier 8 tokens. You should notice increase in the value.
+### History
+Disenchanted item sorting should no longer error out.
+### Bidding UI
+* Currently selected item is now tinted turquoise.
+* Values after bid are retained when going back to item.
+* Chat message is more descriptive now.
+* Bids should no longer start from 2nd item.
+* Bid timer should no longer error out.
+# Classic Loot Manager v3.2.0
+## Features
+### Disenchant tracking
+You can now track disenchanted items! They will show up in your loot history. There is a new disenchant button available in auction UI to mark item as disenchanted. You can also set players as disenchanters and addon will automatically trade it to one of them currently in raid.
+### Multipliers
+You can now configure per class and per slot multipliers for item awarding value. This makes item awarding easier for different classes!
+### Trade List
+Currently pending trades are now viewable in new Trade List UI.
+## Fixes
+### ElvUI
+ElvUI MS/OS buttons should no longer be stacked.
+# Classic Loot Manager v3.1.4
+## Changes
+### Generic Import
+You can now export data through `/clm export` using `Standings` option and import it through `/clm importgeneric` when moving servers or changing guilds. This will retain rosters together with generic and auction configs. Iitem, slot and dynamic values are not retained. History is also lost. Profiles are recreated with new GUIDs (without links) and standings are retained.
+### Global cleanup
+Big cleanup in global codespace was done. If you enconter any lua errors be sure to report them!
 # Classic Loot Manager v3.1.3
 ## Changes
 ### Hide in combat

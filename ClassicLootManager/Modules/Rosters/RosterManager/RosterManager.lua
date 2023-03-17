@@ -6,11 +6,6 @@ local CONSTANTS = CLM.CONSTANTS
 local UTILS     = CLM.UTILS
 -- ------------------------------- --
 
-local pairs, ipairs = pairs, ipairs
-local tonumber, tostring = tonumber, tostring
-local type, MAX_RAID_MEMBERS, IsInRaid, GetRaidRosterInfo = type, MAX_RAID_MEMBERS, IsInRaid, GetRaidRosterInfo
-local tinsert, slen, strsub = table.insert, string.len, strsub
-
 local RosterManager = {}
 function RosterManager:GenerateName()
     local prefix = CONSTANTS.ROSTER_NAME_GENERATOR.PREFIX[math.random(1, #CONSTANTS.ROSTER_NAME_GENERATOR.PREFIX)]
@@ -294,6 +289,21 @@ function RosterManager:Initialize()
             end
 
             roster:GetCalculator():SetEquation(entry:equation())
+        end))
+
+    CLM.MODULES.LedgerManager:RegisterEntryType(
+        CLM.MODELS.LEDGER.ROSTER.AwardMultiplier,
+        (function(entry)
+            LOG:TraceAndCount("mutator(RosterAwardMultiplier)")
+            local rosterUid = entry:rosterUid()
+
+            local roster = self:GetRosterByUid(rosterUid)
+            if not roster then
+                LOG:Debug("Updating non-existent roster [%s]", rosterUid)
+                return
+            end
+
+            roster:SetSlotClassMultiplierValue(UTILS.NumberToClass(entry:ingameClass()), entry:slot(), entry:value())
         end))
 
     CLM.MODULES.LedgerManager:RegisterEntryType(
@@ -586,6 +596,35 @@ function RosterManager:SetRosterDefaultSlotTierValue(nameOrRoster, slot, tier, v
     CLM.MODULES.LedgerManager:Submit(CLM.MODELS.LEDGER.ROSTER.UpdateDefaultSingle:new(roster:UID(), slot, tier, value), true)
 end
 
+function RosterManager:SetSlotClassMultiplierValue(nameOrRoster, class, slot, value)
+    LOG:Trace("RosterManager:SetSlotClassMultiplierValue()")
+    local roster
+    if UTILS.typeof(nameOrRoster, CLM.MODELS.Roster) then
+        roster = nameOrRoster
+    else
+        roster = self:GetRosterByName(nameOrRoster)
+    end
+    if not roster then
+        LOG:Error("RosterManager:SetSlotClassMultiplierValue(): Invalid roster object or name")
+        return nil
+    end
+    value = tonumber(value)
+    if not value then
+        LOG:Error("RosterManager:SetSlotClassMultiplierValue(): Missing value")
+        return
+    end
+    if not slot or not CONSTANTS.INVENTORY_TYPES_SET[slot] then
+        LOG:Error("RosterManager:SetSlotClassMultiplierValue(): Missing slot")
+        return
+    end
+    if roster:GetSlotClassMultiplierValue(class, slot) == value then
+        LOG:Debug("RosterManager:SetSlotClassMultiplierValue(): No change to value. Skipping.")
+        return
+    end
+
+    CLM.MODULES.LedgerManager:Submit(CLM.MODELS.LEDGER.ROSTER.AwardMultiplier:new(roster:UID(), class, slot, value), true)
+end
+
 function RosterManager:SetRosterDynamicItemValueEquation(nameOrRoster, equation)
     LOG:Trace("RosterManager:SetRosterDynamicItemValueEquation()")
     local roster
@@ -735,7 +774,7 @@ function RosterManager:SetFieldName(nameOrRoster, field, name)
         return
     end
     name = tostring(name)
-    if slen(name) > 16 then
+    if string.len(name) > 16 then
         LOG:Warning("RosterManager:SetFieldName(): Truncating name %s for field %s to 16 chars.", name, field)
         name = strsub(name, 1, 16)
     end
@@ -962,6 +1001,20 @@ function RosterManager:AddLootToRoster(roster, loot, profile)
     end
     LOG:Debug("RosterManager:AddLootToRoster(): Roster [%s] Loot Id [%s] Profile [%s]", roster:UID(), loot:Id(), profile:GUID())
     roster:AddLoot(loot, profile)
+end
+
+function RosterManager:AddDisenchantedToRoster(roster, loot)
+    LOG:Trace("RosterManager:AddDisenchantedToRoster()")
+    if not UTILS.typeof(roster, CLM.MODELS.Roster) then
+        LOG:Error("RosterManager:AddDisenchantedToRoster(): Invalid roster object")
+        return
+    end
+    if not UTILS.typeof(loot, CLM.MODELS.Loot) then
+        LOG:Error("RosterManager:AddDisenchantedToRoster(): Invalid loot object")
+        return
+    end
+    LOG:Debug("RosterManager:AddDisenchantedToRoster(): Roster [%s] Loot Id [%s]", roster:UID(), loot:Id())
+    roster:AddDisenchanted(loot)
 end
 
 function RosterManager:WipeStandings()

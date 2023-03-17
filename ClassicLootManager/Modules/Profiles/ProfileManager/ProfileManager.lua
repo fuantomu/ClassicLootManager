@@ -6,16 +6,13 @@ local CONSTANTS = CLM.CONSTANTS
 local UTILS     = CLM.UTILS
 -- ------------------------------- --
 
-local pairs, type, strsplit, strlower = pairs, type, strsplit, strlower
-local GetNumGuildMembers, GetGuildRosterInfo, UnitIsPlayer = GetNumGuildMembers, GetGuildRosterInfo, UnitIsPlayer
-local GetRaidRosterInfo, MAX_RAID_MEMBERS, IsInRaid, UnitGUID = GetRaidRosterInfo, MAX_RAID_MEMBERS, IsInRaid, UnitGUID
-local sformat = string.format
-
 local whoamiGUID = UTILS.whoamiGUID()
 
 local ProfileManager = {}
 function ProfileManager:Initialize()
     LOG:Trace("ProfileManager:Initialize()")
+
+    self._deProfile = CLM.MODELS.Profile:New(nil, CLM.L["Disenchanted"])
 
     self.cache = {
         profilesGuidMap = {},
@@ -39,7 +36,7 @@ function ProfileManager:Initialize()
 
             local class = UTILS.NumberToClass(entry:ingameClass()) or ""
             local main = entry:main()
-            main =  (type(main) == "number" and main ~= 0) and UTILS.getGuidFromInteger(main) or ""
+            main = (type(main) == "number" and main ~= 0) and UTILS.getGuidFromInteger(main) or ""
             -- Check if it's an update
             local profileInternal = self.cache.profiles[GUID]
             if profileInternal then
@@ -58,6 +55,13 @@ function ProfileManager:Initialize()
                 profileInternal.name = name
                 self.cache.profilesGuidMap[strlower(name)] = GUID
             else
+                -- If profile with this name already exists we need to remove it
+                -- before updating guid map
+                local oldProfile = self:GetProfileByName(name)
+                if oldProfile then
+                    self.cache.profiles[oldProfile:GUID()] = nil
+                end
+                -- New mapping
                 local profile = CLM.MODELS.Profile:New(entry, name, class, main)
                 profile:SetGUID(GUID)
                 self.cache.profiles[GUID] = profile
@@ -65,7 +69,7 @@ function ProfileManager:Initialize()
                 -- Check for conditional restore
                 local rosters = CLM.MODULES.RosterManager:GetRosters()
                 for _, roster in pairs(rosters) do
-                    if roster:IsConditinallyRemoved(GUID) then
+                    if roster:IsConditionallyRemoved(GUID) then
                         roster:RestoreConditionallyRemoved(GUID)
                     end
                 end
@@ -244,7 +248,7 @@ function ProfileManager:NewProfile(GUID, name, class)
             else -- 2 different profiles exist. Warning
                 discard = true
                 LOG:Debug("NewProfile(): guidProfile:GUID() ~= nameProfile:GUID()")
-                warning = sformat(CLM.L["Two different profiles exist for target GUID %s (%s:%s) and name %s (%s:%s). Verify and clean up profiles before updating."], GUID, name, guidProfile:GUID(), guidProfile:Name(), nameProfile:GUID(), nameProfile:Name())
+                warning = string.format(CLM.L["Two different profiles exist for target GUID %s (%s:%s) and name %s (%s:%s). Verify and clean up profiles before updating."], GUID, name, guidProfile:GUID(), guidProfile:Name(), nameProfile:GUID(), nameProfile:Name())
             end
         else -- profile with this name does not exist - this is an actual rename
             discard = false
@@ -254,7 +258,7 @@ function ProfileManager:NewProfile(GUID, name, class)
         if nameProfile then -- name is used already by different profile? Warning
             discard = true
             LOG:Debug("NewProfile(): no guidProfile and nameProfile")
-            warning = sformat(CLM.L["Profile %s already exists and is used by different GUID %s (%s). "], name, nameProfile:GUID(), nameProfile:Name())
+            warning = string.format(CLM.L["Profile %s already exists and is used by different GUID %s (%s). "], name, nameProfile:GUID(), nameProfile:Name())
         else -- New profile!
             discard = false
             LOG:Debug("NewProfile(): not guidProfile and not nameProfile")
@@ -301,7 +305,7 @@ function ProfileManager:MarkAsAltByNames(alt, main)
     if not UTILS.typeof(mainProfile, CLM.MODELS.Profile) then
         if altProfile:Main() ~= "" then
             CLM.MODULES.LedgerManager:Submit(CLM.MODELS.LEDGER.PROFILE.Link:new(altProfile:GUID(), nil), true)
-            LOG:Message(sformat("%s: %s", CLM.L["Unlink Alt"], UTILS.ColorCodeText(altProfile:Name(), UTILS.GetClassColor(altProfile:Class()).hex)))
+            LOG:Message(string.format("%s: %s", CLM.L["Unlink Alt"], UTILS.ColorCodeText(altProfile:Name(), UTILS.GetClassColor(altProfile:Class()).hex)))
         else
             LOG:Error("Main does not exist.")
         end
@@ -327,7 +331,7 @@ function ProfileManager:MarkAsAltByNames(alt, main)
             return
         end
         CLM.MODULES.LedgerManager:Submit(CLM.MODELS.LEDGER.PROFILE.Link:new(altProfile:GUID(), mainProfile:GUID()), true)
-        LOG:Message(sformat("%s%s%s",
+        LOG:Message(string.format("%s%s%s",
             UTILS.ColorCodeText(altProfile:Name(), UTILS.GetClassColor(altProfile:Class()).hex),
             CLM.L[" alt of: "],
             UTILS.ColorCodeText(mainProfile:Name(), UTILS.GetClassColor(mainProfile:Class()).hex)
@@ -536,6 +540,10 @@ end
 
 function ProfileManager:GetProfileByName(name)
     return self.cache.profiles[self.cache.profilesGuidMap[strlower(name)]]
+end
+
+function ProfileManager:GetDisenchanterProfile()
+    return self._deProfile
 end
 
 -- Publis API

@@ -6,8 +6,6 @@ local CONSTANTS = CLM.CONSTANTS
 local UTILS     = CLM.UTILS
 -- ------------------------------- --
 
-local pairs, ipairs = pairs, ipairs
-
 local AceGUI = LibStub("AceGUI-3.0")
 local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
@@ -32,7 +30,7 @@ local function CreateConfigs(self)
         changelog_header = {
             type = "header",
             name = windowName,
-            order = 80
+            order = 85
         },
         changelog_never_show = {
             name = CLM.L["Never show changelog"],
@@ -41,7 +39,7 @@ local function CreateConfigs(self)
             set = function(i, v) self.db.never_show = v and true or false end,
             get = function(i) return self.db.never_show end,
             width = "double",
-            order = 81
+            order = 86
         },
         changelog_toggle = {
             name = CLM.L["Toggle changelog"],
@@ -49,7 +47,7 @@ local function CreateConfigs(self)
             type = "execute",
             handler = self,
             func = "Toggle",
-            order = 82
+            order = 87
           }
     }
     CLM.MODULES.ConfigManager:Register(CONSTANTS.CONFIGS.GROUP.GLOBAL, options)

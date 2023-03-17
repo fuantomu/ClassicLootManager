@@ -10,10 +10,6 @@ local UTILS     = CLM.UTILS
 -- Filter is breaking MVC rule --
 ---------------------------------
 
-local setmetatable = setmetatable
-local ipairs, tonumber, tostring = ipairs, tonumber, tostring
-local sfind, strlower, strlen = string.find, strlower, strlen
-
 local filterInstanceId = 1
 
 local supportedFilters = {
@@ -122,7 +118,7 @@ local function GetSearchFunction(searchList)
             searchString = UTILS.Trim(searchString)
             if strlen(searchString) >= 3 then
                 searchString = ".*" .. strlower(searchString) .. ".*"
-                if(sfind(strlower(input), searchString)) then
+                if(string.find(strlower(input), searchString)) then
                     return true
                 end
             end

@@ -1,6 +1,81 @@
 local  _, CLM = ...
 CLM.ChangelogData = {
     {
+        version = "v3.3.3",
+        data = {
+            {
+                name = "Fixes",
+                data = {
+                    { header = "Import", body = "Import should no longer sync improperly due to missing note." },
+                    { header = "Raid", body = "Raid names are now limited to 128 characters. |cfff48cbaZalán|r." },
+                    { header = "Multipliers", body = "Multipliers configuration will now work using any Locale." },
+                },
+            },
+        },
+    },
+    {
+        version = "v3.3.2",
+        data = {
+            {
+                name = "Fixes",
+                data = {
+                    { header = "Roster configuration", body = "Assistants no longer can modify roster options." },
+                    { header = "Bidding UI", body = "Fixed timer bar bug blocking auctions display." },
+                },
+            },
+        },
+    },
+    {
+        version = "v3.3.0",
+        data = {
+            {
+                name = "Features",
+                data = {
+                    { header = "Rolling", body = "You can now allow players in your raid to `/roll` for an item as a separte or additional step in your auctioning process. This is a very simple mechanism to enhance the existing built-in rolling." },
+                },
+            },
+            {
+                name = "Fixes",
+                data = {
+                    { header = "Dynamic Item value mode", body = "Dynamic ilvl value calculation is now fixed for Tier 8 tokens. You should notice increase in the value." },
+                    { header = "History", body = "Disenchanted item sorting should no longer error out." },
+                    { header = "Bidding UI", body = "* Currently selected item is now tinted turquoise.\n* Values after bid are retained when going back to item.\n* Chat message is more descriptive now.\n* Bids should no longer start from 2nd item.\n* Bid timer should no longer error out." },
+                },
+            },
+        },
+    },
+    {
+        version = "v3.2.0",
+        data = {
+            {
+                name = "Features",
+                data = {
+                    { header = "Disenchant tracking", body = "You can now track disenchanted items! They will show up in your loot history. There is a new disenchant button available in auction UI to mark item as disenchanted. You can also set players as disenchanters and addon will automatically trade it to one of them currently in raid." },
+                    { header = "Multipliers", body = "You can now configure per class and per slot multipliers for item awarding value. This makes item awarding easier for different classes!" },
+                    { header = "Trade List", body = "Currently pending trades are now viewable in new Trade List UI." },
+                },
+            },
+            {
+                name = "Fixes",
+                data = {
+                    { header = "ElvUI", body = "ElvUI MS/OS buttons should no longer be stacked." },
+                },
+            },
+        },
+    },
+    {
+        version = "v3.1.4",
+        data = {
+            {
+                name = "Changes",
+                data = {
+                    { header = "Generic Import", body = "You can now export data through /clm export using Standings option and import it through /clm importgeneric when moving servers or changing guilds. This will retain rosters together with generic and auction configs. Iitem, slot and dynamic values are not retained. History is also lost. Profiles are recreated with new GUIDs (without links) and standings are retained." },
+                    { header = "Global cleanup", body = "Big cleanup in global codespace was done. If you enconter any lua errors be sure to report them!" },
+                },
+            },
+        },
+    },
+    {
         version = "v3.1.3",
         data = {
             {
@@ -128,7 +203,7 @@ CLM.ChangelogData = {
                     { header = "Lingering invisible bars", body = "There should be no more invisible bars lingering during auctioning." },
                     { header = "Auto-Trade", body = "Auto trade should work now as expected." },
                     { header = "Unusable detection", body = "Detection of unusable items should be working agian." },
-                    { header = "Award slash command", body = "Award slash command has returned in old form as `/clm aw`." },
+                    { header = "Award slash command", body = "Award slash command has returned in old form as /clm aw." },
                     { header = "ElvUI", body = "Open Auction list should be visible now." },
                 },
             },
@@ -187,7 +262,7 @@ CLM.ChangelogData = {
                     { header = "Multi Item Auction", body = "Award value Multiplier is not stored nor configurable." },
                     { header = "Scaling", body = "Bidding GUI cannot be scaled at this time." },
                     { header = "GUI", body = "Bidding GUI still needs some refinements and might change anytime." },
-                    { header = "ElvUI skins", body = "ElvUI bidding UI reskin might not be ideal. Best way to ensure the bidding UI looks properly you should not open the UI manually before first auction, otherwise `/reload` will be required for the UI to get fixed. Another option is to disable Ace3 reskin."}
+                    { header = "ElvUI skins", body = "ElvUI bidding UI reskin might not be ideal. Best way to ensure the bidding UI looks properly you should not open the UI manually before first auction, otherwise /reload will be required for the UI to get fixed. Another option is to disable Ace3 reskin."}
                 },
             },
         },

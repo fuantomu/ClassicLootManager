@@ -6,9 +6,6 @@ local CONSTANTS = CLM.CONSTANTS
 local UTILS     = CLM.UTILS
 -- ------------------------------- --
 
-local pow = math.pow
-local GetItemInfo = GetItemInfo
-
 local DEFAULT_MULTIPLIER = {
     epgpweb = 0.483,
     wowpedia = 0.04
@@ -41,10 +38,10 @@ end
 
 local calculators = {
     [CONSTANTS.ITEM_VALUE_EQUATION.EPGPWEB] = (function(ilvl, rarity, multiplier, expvar, slot_multiplier)
-        return multiplier * pow(expvar, (ilvl/26) + (rarity - 4)) * slot_multiplier
+        return multiplier * math.pow(expvar, (ilvl/26) + (rarity - 4)) * slot_multiplier
     end),
     [CONSTANTS.ITEM_VALUE_EQUATION.WOWPEDIA] = (function(ilvl, rarity, multiplier, expvar, slot_multiplier)
-        return pow(getItemValue(rarity, ilvl), expvar) * multiplier * slot_multiplier
+        return math.pow(getItemValue(rarity, ilvl), expvar) * multiplier * slot_multiplier
     end),
 }
 

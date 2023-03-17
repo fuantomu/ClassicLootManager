@@ -6,8 +6,6 @@ local CONSTANTS = CLM.CONSTANTS
 local UTILS     = CLM.UTILS
 -- ------------------------------- --
 
-local setmetatable, ipairs, tsort = setmetatable, ipairs, table.sort
-
 local Raid = {} -- Raid information
 
 Raid.__index = Raid
@@ -23,7 +21,8 @@ function Raid:New(uid, name, roster, config, creator, entry)
     o.roster = roster
 
     o.config = config
-    o.name = name
+    o.name = strsub(tostring(name or ""), 1, 128)
+
     o.status = CONSTANTS.RAID_STATUS.CREATED
     -- o.owner = creator
 
@@ -200,7 +199,7 @@ function Raid:Profiles(historical)
             result[#result + 1] = profile
         end
     end
-    tsort(result, (function(first, second)
+    table.sort(result, (function(first, second)
         return first:Name() < second:Name()
     end))
     return result
@@ -221,7 +220,7 @@ function Raid:Standby(historical)
             result[#result + 1] = profile
         end
     end
-    tsort(result, (function(first, second)
+    table.sort(result, (function(first, second)
         return first:Name() < second:Name()
     end))
     return result
