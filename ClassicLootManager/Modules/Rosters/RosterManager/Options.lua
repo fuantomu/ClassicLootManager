@@ -223,6 +223,12 @@ function RosterManagerOptions:Initialize()
         auction_allin_always_set = (function(name, value)
             SetRosterOption(name, "allInAlways", value)
         end),
+        auction_always0_get = (function(name)
+            return GetRosterOption(name, "always0")
+        end),
+        auction_always0_set = (function(name, value)
+            SetRosterOption(name, "always0", value)
+        end),
         auction_equalbids_get = (function(name)
             return GetRosterOption(name, "allowEqualMax")
         end),
@@ -283,6 +289,12 @@ function RosterManagerOptions:Initialize()
         auction_antisnipe_time_set = (function(name, value)
             SetRosterOption(name, "antiSnipe", value)
         end),
+        auction_linear_time_multiply_get = (function(name)
+            return GetRosterOption(name, "multiplyTime")
+        end),
+        auction_linear_time_multiply_set = (function(name, value)
+            SetRosterOption(name, "multiplyTime", value)
+        end),
         auction_roll_time_get = (function(name)
             return tostring(GetRosterOption(name, "rollTime"))
         end),
@@ -294,7 +306,19 @@ function RosterManagerOptions:Initialize()
         end),
         auction_minimum_points_set = (function(name, value)
             SetRosterOption(name, "minimumPoints", value)
-        end)
+        end),
+        general_starting_points_get = (function(name)
+            return tostring(GetRosterOption(name, "basePoints"))
+        end),
+        general_starting_points_set = (function(name, value)
+            SetRosterOption(name, "basePoints", value)
+        end),
+        general_starting_spent_get = (function(name)
+            return tostring(GetRosterOption(name, "baseSpent"))
+        end),
+        general_starting_spent_set = (function(name, value)
+            SetRosterOption(name, "baseSpent", value)
+        end),
     }
 
     self:UpdateOptions()
@@ -440,7 +464,8 @@ local function default_slot_values(self, roster)
                     if self.readOnly then return end
                     CLM.MODULES.RosterManager:SetRosterDefaultSlotTierValue(roster, slot.type, ivalues.type, tonumber(v))
                 end),
-                name = (CONSTANTS.SLOT_VALUE_TIERS_GUI[ivalues.type] or ""),
+                -- name = (CONSTANTS.SLOT_VALUE_TIERS_GUI[ivalues.type] or ""),
+                name = UTILS.GetRosterConditionalFieldName(ivalues.type, roster),
                 pattern = CONSTANTS.REGEXP_FLOAT,
             }
             order = order + 1
@@ -449,7 +474,7 @@ local function default_slot_values(self, roster)
     return args
 end
 
-local function dynamic_item_values(self, equationGet, equationSet, expvarGet, expvarSet, multiplierGet, multiplierSet, slotGet, slotSet, tierGet, tierSet)
+local function dynamic_item_values(self, roster, equationGet, equationSet, expvarGet, expvarSet, multiplierGet, multiplierSet, slotGet, slotSet, tierGet, tierSet)
     local args = {}
     local order = 0
     local prefix
@@ -536,7 +561,8 @@ local function dynamic_item_values(self, equationGet, equationSet, expvarGet, ex
     }
     order = order + 1
     for _, ivalues in ipairs(valuesWithDesc) do
-        local tierName = (CONSTANTS.SLOT_VALUE_TIERS_GUI[ivalues.type] or "")
+        -- local tierName = (CONSTANTS.SLOT_VALUE_TIERS_GUI[ivalues.type] or "")
+        local tierName = UTILS.GetRosterConditionalFieldName(ivalues.type, roster)
         args[prefix .. "_" .. ivalues.type] = {
             type = "input",
             order = order,
@@ -560,7 +586,7 @@ local function item_value_overrides(self, roster)
     local args = {}
     local order = 1
     for id,_ in pairs(items) do
-        local _, _, _, _, icon = GetItemInfoInstant(id)
+        local _, _, _, _, icon = UTILS.GetItemInfoInstant(id)
         local shortItemLink = "item:" .. tostring(id)
         if icon then
             local sid = tostring(id)
@@ -569,7 +595,7 @@ local function item_value_overrides(self, roster)
                     name = "",
                     image = icon,
                     order = order,
-                    width = 0.3,
+                    width = 0.35,
                     type = "execute",
                     func = (function() end),
                     tooltipHyperlink = shortItemLink,
@@ -589,7 +615,8 @@ local function item_value_overrides(self, roster)
                         local values = roster:GetItemValues(id)
                         return tostring(values[ivalues.type])
                     end),
-                    name = (CONSTANTS.SLOT_VALUE_TIERS_GUI[ivalues.type] or ""),
+                    -- name = (CONSTANTS.SLOT_VALUE_TIERS_GUI[ivalues.type] or ""),
+                    name = UTILS.GetRosterConditionalFieldName(ivalues.type, roster),
                     pattern = CONSTANTS.REGEXP_FLOAT,
                 }
                 order = order + 1
@@ -599,7 +626,7 @@ local function item_value_overrides(self, roster)
                 desc = CLM.L["Remove override"],
                 -- image = icon,
                 order = order,
-                width = 0.25,
+                width = 0.30,
                 type = "execute",
                 func = (function() CLM.MODULES.RosterManager:RemoveRosterItemOverride(roster, id) end)
             }
@@ -628,39 +655,43 @@ local function generateBossKillAwardValueInputField(self, roster, info, instance
     }
 end
 
+local bossKillBonusTabMap = {
+    classic = { name = CLM.L["Classic"],                         offset = 0},
+    sod     = { name = CLM.L["SoD"],                             offset = 1000},
+    tbc     = { name = CLM.L["TBC"],                             offset = 2000},
+    wotlk10 = { name = CLM.L["WotLK"] .. " - " .. "10",          offset = 3000},
+    wotlk25 = { name = CLM.L["WotLK"] .. " - " .. "25",          offset = 3500},
+    cata10  = { name = CLM.L["Cataclysm"] .. " - " .. "10",      offset = 4000},
+    cata25  = { name = CLM.L["Cataclysm"] .. " - " .. "25",      offset = 4500},
+    twwn    = { name = CLM.L["TWW"] .. " - " .. CLM.L["Normal"], offset = 10100},
+    twwh    = { name = CLM.L["TWW"] .. " - " .. CLM.L["Heroic"], offset = 10200},
+    twwm    = { name = CLM.L["TWW"] .. " - " .. CLM.L["Mythic"], offset = 10400},
+    dfn     = { name = CLM.L["DF"] .. " - " .. CLM.L["Normal"],  offset = 11100},
+    dfh     = { name = CLM.L["DF"] .. " - " .. CLM.L["Heroic"],  offset = 11200},
+    dfm     = { name = CLM.L["DF"] .. " - " .. CLM.L["Mythic"],  offset = 11400},
+}
+
 local function boss_kill_award_values(self, roster, name)
-    local args = {
-        classic = {
-            type = "group",
-            name = CLM.L["Classic"],
-            args = {}
-        },
-        tbc = {
-            type = "group",
-            name = CLM.L["TBC"],
-            args = {}
-        },
-        wotlk10 = {
-            type = "group",
-            name = CLM.L["WotLK - 10"],
-            args = {}
-        },
-        wotlk25 = {
-            type = "group",
-            name = CLM.L["WotLK - 25"],
-            args = {}
-        }
-    }
+    local args = {}
     -- Common
-    local order = 1
+    local order
     for expansion,expansionEncounterData in pairs(CLM.EncounterIDs) do
-        expansion = string.lower( expansion )
+        expansion = string.lower(expansion)
+        order = bossKillBonusTabMap[expansion].offset
+        if not args[expansion] then
+            args[expansion] = {
+                type = "group",
+                name = bossKillBonusTabMap[expansion].name,
+                args = {},
+                order = order
+            }
+        end
         for _, instanceData in ipairs(expansionEncounterData) do
             for _,difficultyId in ipairs(instanceData.difficulty) do
                 order = order + 1
-                local instanceName = instanceData.name .. " - " .. CLM.DifficultyIDsMap[difficultyId]
+                local instanceName = instanceData.name .. (CLM.DifficultyIDsMap[difficultyId] and (" - " .. CLM.DifficultyIDsMap[difficultyId]) or "")
                 args[expansion].args["encounter_header_" .. instanceData.name .. difficultyId] = {
-                    name = instanceName,
+                    name = instanceName or "???",
                     type = "header",
                     order = order,
                     width = "full"
@@ -959,17 +990,40 @@ function RosterManagerOptions:GenerateRosterOptions(name)
                         pattern = CONSTANTS.REGEXP_FLOAT_POSITIVE,
                         -- width = 0.6
                     },
+                    starting_points_header = {
+                        name = CLM.L["Starting points"],
+                        type = "header",
+                        order = 21,
+                        width = "full"
+                    },
+                    starting_points = {
+                        name = function() return string.format(CLM.L["Starting %s"], isEPGP and CLM.L["EP"] or CLM.L["DKP"]) end,
+                        desc = function() return string.format(CLM.L["%s to be awarded to player when joining roster."], isEPGP and CLM.L["EP"] or CLM.L["DKP"]) end,
+                        type = "input",
+                        disabled = disableManage,
+                        order = 22,
+                        pattern = CONSTANTS.REGEXP_FLOAT_POSITIVE,
+                    },
+                    starting_spent = {
+                        name = function() return string.format(CLM.L["Starting %s"], CLM.L["GP"]) end,
+                        desc = function() return string.format(CLM.L["%s to be awarded to player when joining roster."], CLM.L["GP"]) end,
+                        type = "input",
+                        disabled = disableManage,
+                        order = 23,
+                        hidden = not isEPGP,
+                        pattern = CONSTANTS.REGEXP_FLOAT_POSITIVE,
+                    },
                     bench_header = {
                         name = CLM.L["Bench"],
                         type = "header",
-                        order = 21,
+                        order = 24,
                         width = "full"
                     },
                     allow_self_bench_subscribe =  {
                         name = CLM.L["Allow subscription"],
                         desc = CLM.L["Allow players to subscribe to the bench through Raids menu"],
                         type = "toggle",
-                        order = 22,
+                        order = 25,
                         disabled = disableManage,
                         width = 1
                     },
@@ -977,7 +1031,7 @@ function RosterManagerOptions:GenerateRosterOptions(name)
                         name = CLM.L["Auto bench leavers"],
                         desc = CLM.L["Put players leaving raid on bench instead of removing them. To remove them completely they will need to be removed manually from the bench."],
                         type = "toggle",
-                        order = 23,
+                        order = 26,
                         disabled = disableManage,
                         width = 1
                     },
@@ -985,7 +1039,7 @@ function RosterManagerOptions:GenerateRosterOptions(name)
                         name = CLM.L["Bench multiplier"],
                         desc = CLM.L["Point award multiplier for players on bench."],
                         type = "input",
-                        order = 23.5,
+                        order = 27,
                         disabled = disableManage,
                         pattern = CONSTANTS.REGEXP_FLOAT_POSITIVE,
                         width = 1
@@ -993,13 +1047,13 @@ function RosterManagerOptions:GenerateRosterOptions(name)
                     named_buttons_header = {
                         name = CLM.L["Button Names"],
                         type = "header",
-                        order = 24,
+                        order = 28,
                         width = "full"
                     },
                     epgp_header = {
                         name = CLM.L["EPGP"],
                         type = "header",
-                        order = 32,
+                        order = 36,
                         width = "full",
                         hidden = not isEPGP,
                     },
@@ -1009,7 +1063,7 @@ function RosterManagerOptions:GenerateRosterOptions(name)
                         type = "input",
                         disabled = disableManage,
                         pattern = CONSTANTS.REGEXP_FLOAT_POSITIVE,
-                        order = 33,
+                        order = 37,
                         hidden = not isEPGP,
                     },
                     round_pr = {
@@ -1018,7 +1072,7 @@ function RosterManagerOptions:GenerateRosterOptions(name)
                         type = "select",
                         width = 1,
                         disabled = disableManage,
-                        order = 34,
+                        order = 38,
                         hidden = not isEPGP,
                         values = CONSTANTS.ALLOWED_ROUNDINGS_GUI
                     },
@@ -1050,6 +1104,15 @@ function RosterManagerOptions:GenerateRosterOptions(name)
                         order = 10,
                         width = "full"
                     },
+                    minimum_points = {
+                        name = CLM.L["Minimum standing"],
+                        desc = CLM.L["Minimum standing required to be allowed to bid."],
+                        type = "input",
+                        disabled = disableManage,
+                        pattern = CONSTANTS.REGEXP_FLOAT,
+                        width = 1,
+                        order = 11
+                    },
                     use_os = {
                         name = CLM.L["OS"],
                         desc = CLM.L["Enable OS bids"],
@@ -1064,16 +1127,7 @@ function RosterManagerOptions:GenerateRosterOptions(name)
                         type = "toggle",
                         disabled = disableManage,
                         width = 2,
-                        order = 12.4
-                    },
-                    minimum_points = {
-                        name = CLM.L["Minimum standing"],
-                        desc = CLM.L["Minimum standing required to be allowed to bid."],
-                        type = "input",
-                        disabled = disableManage,
-                        pattern = CONSTANTS.REGEXP_FLOAT,
-                        width = 1,
-                        order = 11
+                        order = 12.1
                     },
                     time_header = {
                         name = CLM.L["Time"],
@@ -1098,6 +1152,14 @@ function RosterManagerOptions:GenerateRosterOptions(name)
                         pattern = CONSTANTS.REGEXP_FLOAT_POSITIVE,
                         width = 1,
                         order = 15
+                    },
+                    linear_time_multiply = {
+                        name = CLM.L["Multiply time"],
+                        desc = CLM.L["Multiply auction time by the number of items to increase auction time lineary."],
+                        type = "toggle",
+                        disabled = disableManage,
+                        width = 1,
+                        order = 16
                     },
                     roll_time = {
                         name = CLM.L["Roll"] .. " " .. CLM.L["Time"],
@@ -1133,7 +1195,7 @@ function RosterManagerOptions:GenerateRosterOptions(name)
                 name = CLM.L["Dynamic Item values"],
                 type = "group",
                 order = 6,
-                args = dynamic_item_values(self, equationGet, equationSet, expvarGet, expvarSet, multiplierGet, multiplierSet, slotGet, slotSet, tierGet, tierSet)
+                args = dynamic_item_values(self, roster, equationGet, equationSet, expvarGet, expvarSet, multiplierGet, multiplierSet, slotGet, slotSet, tierGet, tierSet)
             },
             boss_kill_award_values = {
                 name = CLM.L["Boss kill award values"],
@@ -1144,19 +1206,28 @@ function RosterManagerOptions:GenerateRosterOptions(name)
             }
         }
     }
+    options.args.auction.args.auction_type = {
+        name = CLM.L["Auction type"],
+        desc = CLM.L["|cff00ee44Open:|r English Auction with highest bidder announcement. Highest bidder wins. Two players can not bid same value. Additionally always allows bidding base to accomodate for Swedish Auction flavor.\n\n|cff00ee44Anonymous Open:|r Same as Open but highest bidder name is not disclosed.\n\n|cff00ee44Sealed:|r Bids are not announced. Highest bidder wins.\n\n|cff00ee44Vickrey:|r Same as sealed but winner pays with second-highest bid."],
+        type = "select",
+        disabled = disableManage,
+        order = 4,
+        values = CONSTANTS.AUCTION_TYPES_GUI
+    }
     -- Button names
     options.args.general.args.named_buttons_toggle = {
         name = CLM.L["Use named buttons"],
         desc = CLM.L["Will display names of the buttons instead of values in bidding UI"],
         type = "toggle",
-        order = 25,
+        order = 29,
         disabled = disableManage,
         width = 1
     }
-    local order = 26
+    local order = 30
     for _, tier in ipairs(CONSTANTS.SLOT_VALUE_TIERS_ORDERED) do
         options.args.general.args["named_button_tier_" .. tostring(tier)] = {
-            name = CONSTANTS.SLOT_VALUE_TIERS_GUI[tier],
+            -- name = CONSTANTS.SLOT_VALUE_TIERS_GUI[tier],
+            name = UTILS.GetRosterConditionalFieldName(tier, roster),
             type = "input",
             set = (function(i, v) CLM.MODULES.RosterManager:SetFieldName(roster, tier, v) end),
             get = (function(i) return roster:GetFieldName(tier) end),
@@ -1192,13 +1263,13 @@ function RosterManagerOptions:GenerateRosterOptions(name)
             width = 1,
             order = 12.3
         }
-        options.args.auction.args.auction_type = {
-            name = CLM.L["Auction type"],
-            desc = CLM.L["|cff00ee44Open:|r English Auction with highest bidder announcement. Highest bidder wins. Two players can not bid same value. Additionally always allows bidding base to accomodate for Swedish Auction flavor.\n\n|cff00ee44Anonymous Open:|r Same as Open but highest bidder name is not disclosed.\n\n|cff00ee44Sealed:|r Bids are not announced. Highest bidder wins.\n\n|cff00ee44Vickrey:|r Same as sealed but winner pays with second-highest bid."],
-            type = "select",
+        options.args.auction.args.always0 = {
+            name = CLM.L["Always allow 0 bids"],
+            desc = CLM.L["Enable to always allow 0 bids. Affects ascending item value mode."],
+            type = "toggle",
             disabled = disableManage,
-            order = 4,
-            values = CONSTANTS.AUCTION_TYPES_GUI
+            width = 1,
+            order = 12.4
         }
         options.args.auction.args.item_value_mode = {
             name = CLM.L["Item value mode"],
@@ -1262,15 +1333,6 @@ function RosterManagerOptions:GenerateRosterOptions(name)
             pattern = CONSTANTS.REGEXP_FLOAT_POSITIVE,
             width = 1,
             order = 18
-        }
-    elseif isEPGP then
-        options.args.auction.args.auction_type = {
-            name = CLM.L["Auction type"],
-            -- desc = CLM.L["|cff00ee44Open:|r English Auction with highest bidder announcement. Highest bidder wins. Two players can not bid same value. Additionally always allows bidding base to accomodate for Swedish Auction flavor.\n\n|cff00ee44Anonymous Open:|r Same as Open but highest bidder name is not disclosed.\n\n|cff00ee44Sealed:|r Bids are not announced. Highest bidder wins.\n\n|cff00ee44Vickrey:|r Same as sealed but winner pays with second-highest bid."],
-            type = "select",
-            disabled = disableManage,
-            order = 4,
-            values = CONSTANTS.AUCTION_TYPES_EPGP_GUI
         }
     end
     return options

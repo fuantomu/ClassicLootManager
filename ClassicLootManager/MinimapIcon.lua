@@ -1,6 +1,8 @@
 local _, CLM = ...
 
-local addonName = "Classic Loot Manager" -- same as the UI name for config
+local addonName = "Core Loot Manager" -- same as the UI name for config
+
+local OpenToCategory = InterfaceOptionsFrame_OpenToCategory or Settings.OpenToCategory
 
 local ldb = LibStub:GetLibrary("LibDataBroker-1.1", true)
 if not ldb then return end
@@ -27,7 +29,7 @@ local function CreateMinimapDBI(self, dropdown)
 
     CLM.MinimapDBI.OnTooltipShow = function(tooltip)
         local info
-        tooltip:AddDoubleLine(addonName, CLM.CORE:GetVersionString())
+        tooltip:AddLine(addonName .. " " .. CLM.MODULES.Version:GetString())
 
         if CLM.MODULES.LedgerManager:IsInitialized() then
             local lag = CLM.MODULES.LedgerManager:Lag()
@@ -43,14 +45,17 @@ local function CreateMinimapDBI(self, dropdown)
         end
 
         if CLM.MODULES.LedgerManager:IsInIncoherentState() then
-            tooltip:AddDoubleLine(CLM.L["Incoherent state"], info, 0.6, 0.0, 0.0) -- RED
+            tooltip:AddLine(CLM.L["Incoherent state"], 0.6, 0.0, 0.0) -- RED
         elseif CLM.MODULES.LedgerManager:IsInSync() then
-            tooltip:AddDoubleLine(CLM.L["In-Sync"], info, 0.0, 0.8, 0.0) -- GREEN
+            tooltip:AddLine(CLM.L["In-Sync"], 0.0, 0.8, 0.0) -- GREEN
         elseif CLM.MODULES.LedgerManager:IsSyncOngoing() then
-            tooltip:AddDoubleLine(CLM.L["Sync ongoing"], info, 0.75, 0.75, 0.0) -- YELLOW
+            tooltip:AddLine(CLM.L["Sync ongoing"], 0.75, 0.75, 0.0) -- YELLOW
+        elseif CLM.MODULES.LedgerManager:IsDisabled() then
+            tooltip:AddLine(CLM.L["Disabled"], 0.6, 0.0, 0.0) -- RED
         else -- Unknown state
-            tooltip:AddDoubleLine(CLM.L["Unknown sync state"], info, 0.4, 0.6, 1) -- BLUE
+            tooltip:AddLine(CLM.L["Unknown sync state"], 0.4, 0.6, 1) -- BLUE
         end
+        tooltip:AddLine(info)
 
         if CLM.MODULES.SandboxManager:IsSandbox() then
             tooltip:AddLine(CLM.L["Sandbox mode"], 1, 1, 1)
@@ -89,6 +94,22 @@ local function CreateConfig(self)
           },
     }
     CLM.MODULES.ConfigManager:Register(CLM.CONSTANTS.CONFIGS.GROUP.GLOBAL, options)
+end
+
+local function updateIcon()
+    local ic
+    if CLM.MODULES.LedgerManager:IsInIncoherentState() or CLM.MODULES.LedgerManager:IsDisabled() then
+        ic = "red"
+    elseif CLM.MODULES.LedgerManager:IsInSync() then
+        ic = "green"
+    elseif CLM.MODULES.LedgerManager:IsSyncOngoing() then
+        ic = "yellow"
+    elseif CLM.MODULES.SandboxManager:IsSandbox() or CLM.MODULES.LedgerManager:IsTimeTraveling() then
+        ic = "white"
+    else -- Unknown state
+        ic = "blue"
+    end
+    CLM.MinimapDBI.icon = getIcon(ic)
 end
 
 function Minimap:Initialize()
@@ -136,10 +157,10 @@ function Minimap:Initialize()
         -- },
         {
             title = CLM.L["Configuration"],
-            icon = "Interface\\AddOns\\ClassicLootManager\\Media\\Icons\\clm-green-32.tga",
+            icon = "Interface\\AddOns\\ClassicLootManager\\Media\\Icons\\clm-dark-32.png",
             func = (function()
-                InterfaceOptionsFrame_OpenToCategory(addonName)
-                InterfaceOptionsFrame_OpenToCategory(addonName)
+                OpenToCategory(addonName)
+                OpenToCategory(addonName)
             end)
         },
 
@@ -155,21 +176,7 @@ function Minimap:Initialize()
     CreateMinimapDBI(self, dropdown)
 
     -- Hook Minimap Icon
-    hooksecurefunc(CLM.MODULES.LedgerManager, "UpdateSyncState", function()
-        local ic
-        if CLM.MODULES.LedgerManager:IsInIncoherentState() then
-            ic = "red"
-        elseif CLM.MODULES.LedgerManager:IsInSync() then
-            ic = "green"
-        elseif CLM.MODULES.LedgerManager:IsSyncOngoing() then
-            ic = "yellow"
-        elseif CLM.MODULES.SandboxManager:IsSandbox() or CLM.MODULES.LedgerManager:IsTimeTraveling() then
-            ic = "white"
-        else -- Unknown state
-            ic = "blue"
-        end
-        CLM.MinimapDBI.icon = getIcon(ic)
-    end)
+    hooksecurefunc(CLM.MODULES.LedgerManager, "UpdateSyncState", updateIcon)
 
     if CLM2_MinimapIcon.disable then icon:Hide(addonName) end
 
@@ -178,6 +185,12 @@ end
 
 function Minimap:IsInitialized()
     return self._initialized
+end
+
+function Minimap:UpdateIcon()
+    if self:IsInitialized() then
+        updateIcon()
+    end
 end
 
 function Minimap:Enable()

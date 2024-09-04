@@ -1,5 +1,4 @@
 local _, PRIV = ...
-local CLM = LibStub("ClassicLootManager").CLM
 
 local LOG = CLM.LOG
 local MODULES = CLM.MODULES
@@ -42,11 +41,18 @@ local function GetPlayerGuid(self, name)
 end
 
 local timestampCounter = {}
+local alreadyWarned
 function Migration:Migrate()
     if not ACL:CheckLevel(CONSTANTS.ACL.LEVEL.GUILD_MASTER) then return end
     if LedgerManager:Length() > 0 then
-        LOG:Message(CLM.L["Unable to execute migration. Entries already exist."])
-        return
+        if alreadyWarned then
+            LOG:Message(CLM.L["Executing migration even though ledger is not empty."])
+        else
+            LOG:Message(CLM.L["Unable to execute migration. Entries already exist."])
+            LOG:Message(CLM.L["Execute migration again if you are sure this is correct."])
+            alreadyWarned = true
+            return
+        end
     end
     Comms:Disable()
     LOG:Message(CLM.L["Executing Addon Migration with comms disabled."])
@@ -54,7 +60,7 @@ function Migration:Migrate()
     self.playerCache = {}
     for i=1,GetNumGuildMembers() do
         local name, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, GUID = GetGuildRosterInfo(i)
-        self.playerCache[UTILS.RemoveServer(name)] = GUID
+        self.playerCache[UTILS.Disambiguate(name)] = GUID
     end
     self.migrationOngoing = true
 
@@ -63,6 +69,7 @@ function Migration:Migrate()
     self:MigrateCommunityDKP()
     self:MigrateBastion()
     self:MigrateCEPGP()
+    self:MigrateEPGPClassic()
     LOG:Message(CLM.L["Migration complete. %s to apply and sync with others or go to %s to discard."],
         ColorCodeText("/reload", "00cc00"),
         ColorCodeText(CLM.L["Minimap Icon -> Configuration -> Wipe events"], "6699ff"))
@@ -96,6 +103,11 @@ end
 function Migration:MigrateCEPGP()
     LOG:Trace("Migration:MigrateCEPGP()")
     self:_MigrateOfficerNoteEPGP("CEPGP", "(%d+),(%d+)")
+end
+
+function Migration:MigrateEPGPClassic()
+    LOG:Trace("Migration:MigrateEPGPClassic()")
+    self:_MigrateOfficerNoteEPGP("EPGP-Classic", "(%d+),%s*(%d+)")
 end
 
 local function NewRoster(name, epgp)
@@ -157,7 +169,7 @@ local function AwardItem(uid, GUID, itemId, value, timestamp)
 end
 
 local function ValidateAddon(addonName)
-	local _, _, _, enabled, reason = GetAddOnInfo(addonName)
+	local _, _, _, enabled, reason = UTILS.GetAddOnInfo(addonName)
 	if reason == "MISSING" or reason == "DISABLED" or not enabled then
 		return false -- Missing or globally disabled
 	end
@@ -401,8 +413,7 @@ function Migration:_MigrateOfficerNoteEPGP(addonName, pattern, gpFirst)
         local name,_,_,_,_,_,_,officerNote,_,_,class,_,_,_,_,_,guid = GetGuildRosterInfo(rosterNumber)
         -- Only add members with proper note
         if (string.match(officerNote, pattern)) then
-            -- Get Name sans Realm
-            name = UTILS.RemoveServer(name)
+            name = UTILS.Disambiguate(name)
             -- Get EP and GP from Officer Note
             local ep, gp
             if gpFirst then

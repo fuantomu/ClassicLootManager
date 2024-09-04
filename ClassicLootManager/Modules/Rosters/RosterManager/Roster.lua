@@ -267,13 +267,24 @@ function Roster:DecayStandings(GUID, value)
     local new = UTILS.round(((self:Standings(GUID) * (100 - value)) / 100), self.configuration._.roundDecimals)
     self.pointInfo[GUID]:AddDecayed(self.standings[GUID] - new)
     self.standings[GUID] = new
+end
 
+function Roster:DecaySpent(GUID, value)
+    -- Not decayed in DKP - that's an artificial limitation coming from events
+    -- Originally Decay events didnt discern if its total, spent or current points
+    -- for DKP it would mean current for EPGP total
+    -- If DKP would ever need to decay spent then a look into mutators would be needed
+    -- currently lack of the old field is treated as decay total
     -- Spent in EPGP = GP -> thus needs to be decayed also
     if self:GetPointType() == CONSTANTS.POINT_TYPE.EPGP then
-        new = UTILS.round(((self.pointInfo[GUID].spent * (100 - value)) / 100), self.configuration._.roundDecimals)
+        local new = UTILS.round(((self.pointInfo[GUID].spent * (100 - value)) / 100), self.configuration._.roundDecimals)
         self.pointInfo[GUID].spent = math.max(new, self.configuration._.minGP)
     end
+end
 
+function Roster:DecayTotal(GUID, value)
+    self:DecayStandings(GUID, value)
+    self:DecaySpent(GUID, value)
 end
 
 --[[
@@ -397,7 +408,7 @@ function Roster:SetItemValues(itemId, values)
     LOG:Debug("Set Item Tier Values: [%s]: for roster [%s]", itemId, self:UID())
     lazyCreateItem(self, itemId)
 
-    local _, _, _, itemEquipLoc = GetItemInfoInstant(itemId)
+    local _, _, _, itemEquipLoc = UTILS.GetItemInfoInstant(itemId)
 
     local allSame = true
     for key,value in pairs(self:GetDefaultSlotValues(itemEquipLoc)) do
@@ -419,19 +430,29 @@ function Roster:ClearItemValues(itemId)
     self.itemValues[itemId] = nil
 end
 
-
-function Roster:GetItemValues(itemId)
+local function GetItemValuesProxy(self, itemInfoInput, itemId, calculateCallback)
     local itemValues = self.itemValues[itemId]
     if itemValues == nil then
-        local _, _, _, itemEquipLoc, _, classID, subclassID = GetItemInfoInstant(itemId)
-        local equipLoc = UTILS.WorkaroundEquipLoc(classID, subclassID) or itemEquipLoc
         if self.configuration._.dynamicValue then
-            local dynamicValues = self.calculator:Calculate(itemId, self.configuration._.roundDecimals)
-            if dynamicValues then return dynamicValues end
+            local dynamicValues = self.calculator[calculateCallback](self.calculator, itemInfoInput, self.configuration._.roundDecimals)
+            if dynamicValues then
+                return dynamicValues
+            end
         end
+
+        local _, _, _, itemEquipLoc, _, classID, subclassID = UTILS.GetItemInfoInstant(itemInfoInput)
+        local equipLoc = UTILS.WorkaroundEquipLoc(classID, subclassID, itemEquipLoc)
         return self:GetDefaultSlotValues(CLM.IndirectMap.slot[itemId] or equipLoc)
     end
     return itemValues
+end
+
+function Roster:GetItemValues(itemId)
+    return GetItemValuesProxy(self, itemId, itemId, "CalculateFromId")
+end
+
+function Roster:GetItemValuesFromItemLink(itemLink)
+    return GetItemValuesProxy(self, itemLink, UTILS.GetItemIdFromLink(itemLink), "CalculateFromLink")
 end
 
 function Roster:GetSlotClassMultiplierValue(class, slot)
@@ -451,8 +472,8 @@ function Roster:SetSlotClassMultiplierValue(class, slot, value)
 end
 
 function Roster:GetClassItemMultiplierValue(class, itemId)
-    local _, _, _, itemEquipLoc, _, classID, subclassID = GetItemInfoInstant(itemId)
-    local equipLoc = UTILS.WorkaroundEquipLoc(classID, subclassID) or itemEquipLoc
+    local _, _, _, itemEquipLoc, _, classID, subclassID = UTILS.GetItemInfoInstant(itemId)
+    local equipLoc = UTILS.WorkaroundEquipLoc(classID, subclassID, itemEquipLoc)
     return self:GetSlotClassMultiplierValue(class, CLM.IndirectMap.slot[itemId] or equipLoc)
 end
 --[[
@@ -632,6 +653,9 @@ end
 function Roster:CopyConfiguration(s)
     self.configuration = CLM.MODELS.RosterConfiguration:New(UTILS.DeepCopy(s.configuration))
     self.bossKillBonusValues = UTILS.DeepCopy(s.bossKillBonusValues)
+    self.hardModeBossKillBonusValues = UTILS.DeepCopy(s.hardModeBossKillBonusValues)
+    self.classMultipliers = UTILS.DeepCopy(s.classMultipliers)
+    self.fieldNames = UTILS.DeepCopy(s.fieldNames)
     -- TODO: calculator coefficients copy?
 end
 

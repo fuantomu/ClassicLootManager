@@ -9,14 +9,17 @@
             "command": "/usr/local/bin/luacheck . | tee report.log",
             "problemMatcher": {
                 "owner": "lua",
-                "fileLocation": ["relative", "${workspaceFolder}"],
+                "fileLocation": [
+                    "relative",
+                    "${workspaceFolder}"
+                ],
                 "pattern": {
                     "regexp": "^\\s*(.*):(\\d+):(\\d+):\\s*(.*)\\s*$",
                     "file": 1,
                     "line": 2,
                     "column": 3,
                     "message": 4
-              }
+                }
             }
         },
         {
@@ -24,15 +27,57 @@
             "type": "shell",
             "command": "python3 ./scripts/l10n_strings.py --parser",
             "problemMatcher": {
-                // "owner": "lua",
-                "fileLocation": ["relative", "${workspaceFolder}"],
+                "fileLocation": [
+                    "relative",
+                    "${workspaceFolder}"
+                ],
                 "pattern": {
                     "regexp": "^(Info|Warning):(.*\\.lua):(.*)$",
-                    "severity":1,
+                    "severity": 1,
                     "file": 2,
                     "message": 3
-              }
+                }
             }
+        },
+        {
+            "label": "release",
+            "type": "shell",
+            "command": "source ~/.bash_wow && clm_release",
+            "problemMatcher": []
+        },
+        {
+            "label": "clean",
+            "type": "shell",
+            "command": "source ~/.bash_wow && clm_clean ${input:WOW_TARGET}",
+            "problemMatcher": []
+        },
+        {
+            "label": "debug deploy",
+            "type": "shell",
+            "command": "source ~/.bash_wow && clm_debug_deploy ${input:WOW_TARGET}",
+            "problemMatcher": []
+        },
+        {
+            "label": "copy file",
+            "type": "shell",
+            "command": "source ~/.bash_wow && cp ${relativeFile} $WOW/${input:WOW_TARGET}/Interface/AddOns/${relativeFile}",
+            "problemMatcher": []
+        },
+        //${file}
+    ],
+    "inputs": [
+        {
+            "id": "WOW_TARGET",
+            "description": "WoW target",
+            "default": "$CATA",
+            "type": "pickString",
+            "options": [
+                "$CATA",
+                "$DF",
+                "$TWW",
+                "$ERA",
+                "$RETAIL"
+            ]
         }
     ]
 }

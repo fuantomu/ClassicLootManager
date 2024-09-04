@@ -6,12 +6,10 @@ local CONSTANTS = CLM.CONSTANTS
 local UTILS     = CLM.UTILS
 -- ------------------------------- --
 
-local SERIALIATION_OPTIONS = {
+local SERIALIZATION_OPTIONS = {
     errorOnUnserializableType = false,
     stable = false,
 }
-
-local whoami = UTILS.whoami()
 
 local serdes = LibStub("LibSerialize")
 local codec = LibStub("LibDeflate")
@@ -19,6 +17,9 @@ local codec = LibStub("LibDeflate")
 local CommsPrefix = "CLM"
 
 local Comms = CLM.CORE:NewModule("Comms", {}, "AceComm-3.0")
+
+local COMMS_VERSION = 1
+
 function Comms:Initialize()
     LOG:Trace("Comms:Initialize()")
     self.callbacks = {}
@@ -113,7 +114,7 @@ function Comms:Send(prefix, message, distribution, target, priority)
         return
     end
     -- Check ACL before working on data to prevent UI Freeze DoS
-    if not self.securityCallbacks[prefix](whoami, message and #message or 0) then
+    if not self.securityCallbacks[prefix](UTILS.whoami(), message and #message or 0) then
         LOG:Warning("Trying to send privileged message [%s]", prefix)
         return false
     end
@@ -126,8 +127,23 @@ function Comms:Send(prefix, message, distribution, target, priority)
     if not CONSTANTS.COMMS.PRIORITIES[priority] then
         priority = CONSTANTS.COMMS.PRIORITY.NORMAL
     end
+    -- Version comms
+    message = {
+        _v = COMMS_VERSION,
+        _m = message,
+    }
+    -- X-realm
+    if distribution == CONSTANTS.COMMS.DISTRIBUTION.WHISPER then
+        -- cross-faction whisper workaround
+        -- utilize cross-faction workaround for cross realm also
+        if UTILS.ArePlayersCrossRealm(target, UTILS.whoami()) or UTILS.IsTargetCrossFaction(target) then
+            distribution = CONSTANTS.COMMS.DISTRIBUTION.RAID
+            message._isX = true
+            message._target = target
+        end
+    end
     -- Serialize
-    local tmp = serdes:SerializeEx(SERIALIATION_OPTIONS, message)
+    local tmp = serdes:SerializeEx(SERIALIZATION_OPTIONS, message)
     if tmp == nil then
         LOG:Error("Comms:Send() unable to serialize message: %s", message)
         return false
@@ -149,19 +165,21 @@ function Comms:Send(prefix, message, distribution, target, priority)
         LOG:Error("Comms:Send() unable to encode message: %s", message)
         return false
     end
+
     LOG:Debug("Message on channel %s with size %s [B] ", prefix, tmp:len())
     self:SendCommMessage(prefix, tmp, distribution, target, priority)
     return true
 end
 
 function Comms:OnReceive(prefix, message, distribution, sender)
-    -- LOG:Trace("Comms:OnReceive() %s", prefix) --  SPAM
+    LOG:Debug("Comms:OnReceive() %s", prefix) --  SPAM
     if not self.enabled then
         LOG:Debug("Comms:OnReceive(): Disabled")
         return false
     end
+    sender = UTILS.Disambiguate(sender)
     -- Ignore messages from self if not allowing them specifically
-    if not self.allowSelfReceive[prefix] and (sender == whoami) then
+    if not self.allowSelfReceive[prefix] and (sender == UTILS.whoami()) then
         return false
     end
     -- Validate prefix
@@ -198,8 +216,23 @@ function Comms:OnReceive(prefix, message, distribution, sender)
         LOG:Debug("Comms:OnReceive() unable to deserialize message [%s] from [%s]", prefix, sender)
         return
     end
-    -- Execute callback
-    self.callbacks[prefix](tmp, distribution, sender)
+    -- Version check
+    if tmp._v ~= COMMS_VERSION then
+        LOG:Debug("Comms:OnReceive() received invalid comms message [%s] from [%s]", tostring(tmp._v), sender)
+        if (tonumber(tmp._v) or 0) > COMMS_VERSION then
+            CLM.MODULES.Version:OutOfDate(true)
+        end
+        return
+    end
+    -- Cross-Faction workaround check
+    if tmp._isX then
+        if tmp._target == UTILS.whoami() then
+            self.callbacks[prefix](tmp._m, CONSTANTS.COMMS.DISTRIBUTION.WHISPER, sender)
+        end
+    else
+        -- Execute callback
+        self.callbacks[prefix](tmp._m, distribution, sender)
+    end
 end
 
 -- Publish API
@@ -239,3 +272,7 @@ CONSTANTS.COMMS = {
         --YELL = "YELL"
     }
 }
+
+--@do-not-package@
+CONSTANTS.COMMS.DISTRIBUTION.GUILD = CONSTANTS.COMMS.DISTRIBUTION.RAID
+--@end-do-not-package@

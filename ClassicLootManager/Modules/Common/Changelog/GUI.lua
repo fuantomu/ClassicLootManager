@@ -10,7 +10,7 @@ local AceGUI = LibStub("AceGUI-3.0")
 local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 
-local windowName = CLM.L["Classic Loot Manager"] .. " " .. CLM.L["Changelog"]
+local windowName = CLM.L["Core Loot Manager"] .. " " .. CLM.L["Changelog"]
 
 local function InitializeDB(self)
     self.db = CLM.MODULES.Database:GUI('changelog', {
@@ -132,7 +132,7 @@ function ChangelogGUI:Create()
     self.top = f
 
     -- Display based on config
-    local version = CLM.CORE:GetVersion()
+    local version = CLM.MODULES.Version:Get()
     local sameVersion = (self.db.lastVersion.major == version.major) and (self.db.lastVersion.minor == version.minor) and (self.db.lastVersion.patch == version.patch)
     if self.db.never_show or (sameVersion and self.db.do_not_show) then
         f:Hide()

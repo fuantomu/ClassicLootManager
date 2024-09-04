@@ -13,7 +13,7 @@ local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 local VERTICAL_REGISTRY   = "clm_unifiedgui_gui_options_vertical"
 local HORIZONTAL_REGISTRY = "clm_unifiedgui_gui_options_horizontal"
 
-local _, _, _, isElvUI = GetAddOnInfo("ElvUI")
+local _, _, _, isElvUI = UTILS.GetAddOnInfo("ElvUI")
 
 local function InitializeDB(self)
     self.db = CLM.MODULES.Database:GUI('unifiedgui', {
@@ -24,6 +24,7 @@ end
 
 local function StoreLocation(self)
     self.db.location = { self.aceObjects.top:GetPoint() }
+    self.db.location[2] = nil
 end
 
 local function RestoreLocation(self)
@@ -56,6 +57,7 @@ local function UpdateScrollingTableData(self)
     currentSt:SetData(dataProvider(currentSt:GetScrollingTable()))
 end
 
+local UpdateTabInternal
 local function UpdateTab(self)
     -- Update Tab sizes
     local totalWidth = self.aceObjects.tabularContent.frame.width
@@ -71,10 +73,13 @@ local function UpdateTab(self)
         },
         alignV = "top"
     })
-    -- Update options
-    self:RefreshOptionsPane()
-    -- Redraw
-    self.aceObjects.tabularContent:DoLayout()
+    UpdateTabInternal = UpdateTabInternal or (function()
+        -- Update options
+        self:RefreshOptionsPane()
+        -- Redraw
+        self.aceObjects.tabularContent:DoLayout()
+    end)
+    C_Timer.After(0, UpdateTabInternal)
 end
 
 local function CreateTabsWidget(self, content)
@@ -82,9 +87,15 @@ local function CreateTabsWidget(self, content)
 
     local tabs = {}
     for name, tab in pairs(self.tabs) do
+        local tabIcon = ""
+        if tab.icon then
+            tabIcon = string.format("|T%s:0|t ", tab.icon or "")
+        elseif tab.iconExtended then
+            tabIcon = string.format("|T%s|t ", tab.iconExtended or "")
+        end
         tabs[#tabs + 1] = {
             value = name,
-            text = CLM.L[UTILS.capitalize(name)],
+            text = tabIcon .. CLM.L[UTILS.capitalize(name)],
             order = tab.order
         }
     end
@@ -146,7 +157,7 @@ local function UpdateLoadingBanner(self)
                 name = "|cffdcb749CLM is processing|r",
                 type = "description",
                 fontSize = "large",
-                image = "Interface\\AddOns\\ClassicLootManager\\Media\\Icons\\clm-dark-128.tga",
+                image = "Interface\\AddOns\\ClassicLootManager\\Media\\Icons\\clm-dark-64.png",
                 order = 1
             },
             middle = {
@@ -263,7 +274,7 @@ function UnifiedGUI:CreateAceGUIStructure()
     LOG:Trace("UnifiedGUI:CreateAceGUIStructure()")
     -- Main Frame
     local f = AceGUI:Create("Window")
-    f:SetTitle(CLM.L["Classic Loot Manager"])
+    f:SetTitle(CLM.L["Core Loot Manager"])
     f:SetLayout("Fill")
     f:EnableResize(false)
     f:SetWidth(900)
@@ -311,7 +322,7 @@ local publicHandlers = {
 function UnifiedGUI:RegisterTab(
     name, order, tableStructure, tableDataFeeder,
     horizontalOptionsFeeder, verticalOptionsFeeder,
-    handlers
+    handlers, icon, iconExtended
 )
 
     local supportedTableStructureTypes = {["table"] = true}
@@ -341,7 +352,9 @@ function UnifiedGUI:RegisterTab(
             horizontalOptions = horizontalOptionsFeeder or { type = "group", args = {} },
             verticalOptions = verticalOptionsFeeder or { type = "group", args = {} }
         },
-        handlers = {}
+        handlers = {},
+        icon = icon,
+        iconExtended = iconExtended
     }
 
     for _, handlerName in ipairs(publicHandlers) do
@@ -370,6 +383,7 @@ end
 function UnifiedGUI:GetScrollingTable()
     return self.aceObjects.scrollingTables[self.selectedTab]:GetScrollingTable()
 end
+
 
 -- Refresh the data
 function UnifiedGUI:Refresh(visible)

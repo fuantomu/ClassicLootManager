@@ -6,7 +6,7 @@ local CONSTANTS = CLM.CONSTANTS
 local UTILS     = CLM.UTILS
 -- ------------------------------- --
 
-local CLM_ICON_DARK = "Interface\\AddOns\\ClassicLootManager\\Media\\Icons\\clm-dark-128.tga"
+local CLM_ICON_DARK = "Interface\\AddOns\\ClassicLootManager\\Media\\Icons\\clm-dark-32.png"
 
 local function formatPriceText(values, itemValueMode)
     local text = ""
@@ -66,15 +66,39 @@ local isEquipable = UTILS.Set({
     "INVTYPE_RELIC",
 })
 
+local isSpecial = UTILS.Set({
+    -- ToGC tokens have no equiploc
+    -- We are faking them as Non-equippable INVTYPE
+    -- and we want to display data for them
+    47242, 47557, 47558, 47559,
+    -- ICC items
+    52025, 52026, 52027, 52028, 52029, 52030,
+    -- SoD
+    220636, 220637,
+    -- Cata
+    66998,
+})
+
 local function addItemPriceToTooltip(tooltip)
     -- Sanity Check
+    local itemLink
     if not tooltip then return end
-    local _, itemLink = tooltip:GetItem()
+    if tooltip.GetItem then
+        _, itemLink = tooltip:GetItem()
+    else
+        _,itemLink = TooltipUtil.GetDisplayedItem(tooltip)
+    end
     if not itemLink then return end
     local itemId = UTILS.GetItemIdFromLink(itemLink)
     if itemId == 0 then return end
-    local _, _, _, itemEquipLoc = GetItemInfoInstant(itemId)
-    if not isEquipable[CLM.IndirectMap.slot[itemId] or itemEquipLoc] then return end
+    if not isSpecial[itemId] then
+        local _, _, _, itemEquipLoc, _, class, subclass = UTILS.GetItemInfoInstant(itemId)
+        itemEquipLoc = UTILS.WorkaroundEquipLoc(class, subclass, itemEquipLoc)
+        if not isEquipable[CLM.IndirectMap.slot[itemId] or itemEquipLoc] then
+            return
+        end
+    end
+    if not CLM.MODULES.RaidManager:IsInitialized() then return end
     local raid = CLM.MODULES.RaidManager:GetRaid()
     local rosters = raid and {
         [CLM.MODULES.RosterManager:GetRosterNameByUid(raid:Roster():UID())] = raid:Roster()
@@ -84,7 +108,7 @@ local function addItemPriceToTooltip(tooltip)
         -- Gather
         local display = raid and true or CLM.MODULES.RosterManager:GetDisplayTooltip(roster:UID())
         if display then
-            local values = roster:GetItemValues(itemId)
+            local values = roster:GetItemValuesFromItemLink(itemLink)
             local isEPGP = roster:GetPointType() == CONSTANTS.POINT_TYPE.EPGP
             local itemValueMode = roster:GetConfiguration("itemValueMode")
             -- Format
@@ -99,6 +123,10 @@ local function addItemPriceToTooltip(tooltip)
     end
 end
 
-LibStub("AceConfigDialog-3.0").tooltip:HookScript("OnTooltipSetItem", addItemPriceToTooltip)
-GameTooltip:HookScript("OnTooltipSetItem", addItemPriceToTooltip)
-ItemRefTooltip:HookScript("OnTooltipSetItem", addItemPriceToTooltip)
+if CLM.WoW10 then
+    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, addItemPriceToTooltip)
+else
+    LibStub("AceConfigDialog-3.0").tooltip:HookScript("OnTooltipSetItem", addItemPriceToTooltip)
+    GameTooltip:HookScript("OnTooltipSetItem", addItemPriceToTooltip)
+    ItemRefTooltip:HookScript("OnTooltipSetItem", addItemPriceToTooltip)
+end

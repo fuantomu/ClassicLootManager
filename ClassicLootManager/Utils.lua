@@ -1,10 +1,11 @@
+---@diagnostic disable: param-type-mismatch
 local _, CLM = ...
 
 local LOG = CLM.LOG
 local CONSTANTS = CLM.CONSTANTS
 local UTILS = CLM.UTILS
 
-local CLM_ICON_DARK = "Interface\\AddOns\\ClassicLootManager\\Media\\Icons\\clm-dark-128.tga"
+local CLM_ICON_DARK = "Interface\\AddOns\\ClassicLootManager\\Media\\Icons\\clm-dark-32.png"
 
 local LibDD = LibStub:GetLibrary("LibUIDropDownMenu-4.0")
 UTILS.LibDD = LibDD
@@ -25,12 +26,19 @@ local numberToClass = {
     [7]  = "Shaman",
     [8]  = "Mage",
     [9]  = "Warlock",
-    -- [10] = "Monk",
+    [10] = "Monk",
     [11] = "Druid",
-    -- [12] = "Demon Hunter"
+    [12] = "Demon Hunter",
+    [13] = "Evoker"
 }
-
-local classOrdered = { "Death Knight", "Druid", "Hunter", "Mage", "Priest", "Rogue", "Shaman", "Paladin", "Warlock", "Warrior" }
+local classOrdered
+if CLM.WoW10 then
+    classOrdered = { "Death Knight", "Demon Hunter", "Druid", "Evoker", "Hunter", "Mage", "Monk", "Priest", "Rogue", "Shaman", "Paladin", "Warlock", "Warrior" }
+elseif CLM.WoWSeasonal then
+    classOrdered = { "Druid", "Hunter", "Mage", "Priest", "Rogue", "Shaman", "Paladin", "Warlock", "Warrior" }
+else
+    classOrdered = { "Death Knight", "Druid", "Hunter", "Mage", "Priest", "Rogue", "Shaman", "Paladin", "Warlock", "Warrior" }
+end
 local classToNumber = {}
 for k, v in pairs(numberToClass) do
     classToNumber[v] = k
@@ -54,9 +62,10 @@ local classToCanonical = {
     ["Shaman"] = "SHAMAN",
     ["Mage"] = "MAGE",
     ["Warlock"] = "WARLOCK",
-    -- ["Monk"] = "MONK",
+    ["Monk"] = "MONK",
     ["Druid"] = "DRUID",
-    -- ["Demon Hunter"] = "DEMONHUNTER"
+    ["Demon Hunter"] = "DEMONHUNTER",
+    ["Evoker"] = "EVOKER",
 }
 
 function UTILS.CanonicalClass(class)
@@ -73,9 +82,10 @@ local canonicalToNumber = {
     ["SHAMAN"] = 7,
     ["MAGE"] = 8,
     ["WARLOCK"] = 9,
-    -- ["MONK"] = 10,
+    ["MONK"] = 10,
     ["DRUID"] = 11,
-    -- ["DEMONHUNTER"] = 12
+    ["DEMONHUNTER"] = 12,
+    ["EVOKER"] = 13,
 }
 
 function UTILS.CanonicalClassToNumber(class)
@@ -92,12 +102,15 @@ local classColors = {
     ["Paladin"]         = { a = 1, r = 0.96, g = 0.55, b = 0.73, hex = "F58CBA" },
     ["Warlock"]         = { a = 1, r = 0.53, g = 0.53, b = 0.93, hex = "8787ED" },
     ["Warrior"]         = { a = 1, r = 0.78, g = 0.61, b = 0.43, hex = "C79C6E" },
-    ["Death Knight"]    = { a = 1, r = 0.77, g = 0.12, b = 0.23, hex = "C41E3A" }
+    ["Death Knight"]    = { a = 1, r = 0.77, g = 0.12, b = 0.23, hex = "C41E3A" },
+    ["Demon Hunter"]    = { a = 1, r = 0.64, g = 0.19, b = 0.79, hex = "A330C9" },
+    ["Monk"]            = { a = 1, r = 0,    g = 1.00, b = 0.60, hex = "00FF98" },
+    ["Evoker"]          = { a = 1, r = 0.20, g = 0.58, b = 0.50, hex = "33937F" },
 }
 
 function UTILS.GetClassColor(className)
     local color = classColors[className]
-    return (color or { r = 0.627, g = 0.627, b = 0.627, hex = "A0A0A0" })
+    return (color or { r = 0.627, g = 0.627, b = 0.627, hex = "9d9d9d" })
 end
 local GetClassColor = UTILS.GetClassColor
 
@@ -192,8 +205,16 @@ end
 function UTILS.GetItemIdFromLink(itemLink)
     -- local _, _, Color, Ltype, Id, Enchant, Gem1, Gem2, Gem3, Gem4, Suffix, Unique, LinkLvl, Name = string.find(itemLink, "|?c?f?f?(%x*)|?H?([^:]*):?(%d+):?(%d*):?(%d*):?(%d*):?(%d*):?(%d*):?(%-?%d*):?(%-?%d*):?(%d*):?(%d*):?(%-?%d*)|?h?%[?([^%[%]]*)%]?|?h?|?r?")
     itemLink = itemLink or ""
-    local _, _, _, _, itemId = string.find(itemLink, "|?c?f?f?(%x*)|?H?([^:]*):?(%d+).*")
-    return tonumber(itemId) or 0
+    -- local _, _, _, _, itemId = string.find(itemLink, "|?c?f?f?(%x*)|?H?([^:]*):?(%d+).*")
+    local _, _, itemId, extra = string.find(itemLink, "item:(%d+)([-?%d:]*)|h")
+    return tonumber(itemId) or 0, extra or ""
+end
+
+function UTILS.SpoofLink(itemLink, extra)
+    if not extra then return itemLink end
+    local _, _, pre, post = string.find(itemLink, "(.*item:%d+)[-?%d:]+(|h.*)")
+    if not pre or not post then return itemLink end
+    return pre .. extra .. post
 end
 
 function UTILS.UniversalCliMethodExecutor(name, object, cli)
@@ -300,17 +321,6 @@ function UTILS.DeepCopy(orig, copies)
     return copy
 end
 
-function UTILS.RemoveServer(name)
-    name, _ = strsplit("-", name or "")
-    return name
-end
-
-function UTILS.GetUnitName(unit)
-    local name = GetUnitName(unit)
-    name = name or ""
-    return UTILS.RemoveServer(name)
-end
-
 function UTILS.typeof(object, objectType)
     if not object or not objectType then
         return false
@@ -332,39 +342,96 @@ function UTILS.empty(object)
     end
     return false
 end
+function UTILS.RemoveServer(name)
+    name, _ = strsplit("-", name or "")
+    return name
+end
+function UTILS.GetServer(name)
+    local _, server = strsplit("-", name or "")
+    return (server or "")
+end
+local playerGUID = UnitGUID("player")
+local getIntegerGuid, myRealmId
+
+local normalizedRealmName
+function UTILS.GetNormalizedRealmName()
+    normalizedRealmName = normalizedRealmName or GetNormalizedRealmName()
+    return normalizedRealmName or ""
+end
+
+local _GetNormalizedRealmName = UTILS.GetNormalizedRealmName
 
 function UTILS.getIntegerGuid(GUID)
-    return tonumber(string.sub(GUID, -8), 16)
+    local _, realm, int = strsplit("-", GUID)
+    return {tonumber(realm, 10), tonumber(int, 16)}
 end
-local getIntegerGuid = UTILS.getIntegerGuid
-
-local playerGUID = UnitGUID("player") or ""
-local GUIDPrefix = string.sub(playerGUID, 1, -9)
-function UTILS.getGuidFromInteger(int)
-    return GUIDPrefix .. string.format("%08X", tonumber(int) or 0)
+getIntegerGuid = UTILS.getIntegerGuid
+myRealmId = unpack(getIntegerGuid(playerGUID), 1)
+function UTILS.getGuidFromInteger(iGUID)
+    return string.format("Player-%d-%08X", iGUID[1], iGUID[2])
 end
-
-local playerName = UTILS.GetUnitName("player")
-function UTILS.whoami()
-    return playerName
+function UTILS.ValidateIntegerGUID(iGUID)
+    if type(iGUID) ~= "table" then return false end
+    for i=1,2 do if type(iGUID[i]) ~= "number" then return false end end
+    return true
 end
-
-function UTILS.whoamiGUID()
-    return playerGUID
+function UTILS.Disambiguate(name)
+    if string.find(name, "-") == nil then
+        name = name .. "-" .. _GetNormalizedRealmName()
+    end
+    return name
 end
-
 function UTILS.GetGUIDFromEntry(e)
     if typeof(e, CLM.MODELS.Profile) then
         return getIntegerGuid(e:GUID())
-    elseif type(e) == "number" then
-        return e
     elseif type(e) == "string" then
         return getIntegerGuid(e)
+    elseif type(e) == "number" then
+        return {myRealmId, e}
     else
         return nil
     end
 end
+function UTILS.ArePlayersCrossRealm(playerA, playerB)
+    return UTILS.GetServer(playerA) ~= UTILS.GetServer(playerB)
+end
+
 local GetGUIDFromEntry = UTILS.GetGUIDFromEntry
+
+local Disambiguate = UTILS.Disambiguate
+function UTILS.GetUnitName(unit)
+    local name = GetUnitName(unit, true)
+    return Disambiguate(name or "")
+end
+
+do
+    local playerFullName
+    function UTILS.whoami()
+        if not playerFullName then
+            playerFullName = UTILS.GetUnitName("player")
+        end
+        return playerFullName
+    end
+end
+function UTILS.whoamiGUID()
+    return playerGUID
+end
+
+do
+    local playerFaction
+    function UTILS.MyFaction()
+        if not playerFaction then
+            playerFaction = UnitFactionGroup("player")
+        end
+        return playerFaction
+    end
+end
+
+function UTILS.IsTargetCrossFaction(target)
+    local targetFaction = UnitFactionGroup(target)
+    if targetFaction == "" or not targetFaction then return false end -- We do not want false positives
+    return UnitFactionGroup(target) ~= UTILS.MyFaction()
+end
 
 function UTILS.CreateGUIDList(playerList)
     local playerGUIDList = {}
@@ -465,39 +532,53 @@ function UTILS.GetCutoffTimestamp()
     return 1566684000
 end
 
-function UTILS.buildPlayerListForTooltip(profiles, tooltip, inLine, maxProfiles)
+local function defaultDataProvider(param)
+    return param
+end
+
+function UTILS.putListInTooltip(data, tooltip, inLine, max, dataProvider, autoWrap)
+    dataProvider = dataProvider or defaultDataProvider
     inLine = inLine or 5
-    maxProfiles = maxProfiles or 25
-    local profilesInLine = 0
+    max = max or 25
+    local entriesInLine = 0
     local line = ""
     local separator = ", "
-    local numProfiles = #profiles
-    local profilesLeft
-    local notIncludedProfiles = 0
-    if numProfiles > maxProfiles then
-        notIncludedProfiles = numProfiles - maxProfiles
-        numProfiles = maxProfiles
+    local numEntries = #data
+    local entriesLeft
+    local notIncludedEntries = 0
+    if numEntries > max then
+        notIncludedEntries = numEntries - max
+        numEntries = max
     end
-    profilesLeft = numProfiles
+    entriesLeft = numEntries
 
-    while (profilesLeft > 0) do
-        local currentProfile = profiles[numProfiles - profilesLeft + 1]
-        profilesLeft = profilesLeft - 1
-        if profilesLeft == 0 then
+    while (entriesLeft > 0) do
+        local currentEntry = data[numEntries - entriesLeft + 1]
+        entriesLeft = entriesLeft - 1
+        if entriesLeft == 0 then
             separator = ""
         end
-        line = line .. ColorCodeText(currentProfile:Name(), GetClassColor(currentProfile:Class()).hex) .. separator
-        profilesInLine = profilesInLine + 1
-        if profilesInLine >= inLine or profilesLeft == 0 then
-            tooltip:AddLine(line)
+        line = line .. dataProvider(currentEntry).. separator
+        entriesInLine = entriesInLine + 1
+        if entriesInLine >= inLine or entriesLeft == 0 then
+            tooltip:AddLine(line, nil, nil, nil, autoWrap and true or false)
             line = ""
-            profilesInLine = 0
+            entriesInLine = 0
         end
     end
 
-    if notIncludedProfiles > 0 then
-        tooltip:AddLine(notIncludedProfiles .. CLM.L[" more"])
+    if notIncludedEntries > 0 then
+        tooltip:AddLine(notIncludedEntries .. CLM.L[" more"], nil, nil, nil, autoWrap and true or false)
     end
+end
+
+local function profileListTooltipDataProvider(profile)
+    return ColorCodeText(profile:ShortName(), GetClassColor(profile:Class()).hex)
+end
+
+local putListInTooltip = UTILS.putListInTooltip
+function UTILS.buildPlayerListForTooltip(profiles, tooltip)
+    return putListInTooltip(profiles, tooltip, 5, 25, profileListTooltipDataProvider, false)
 end
 
 local greenYes = ColorCodeText(CLM.L["Yes"], "00cc00")
@@ -586,16 +667,23 @@ function UTILS.round(number, decimals)
     return math.floor(number * factor + 0.5) / factor
 end
 
--- function UTILS.GetMyTalents()
---     local one, two, three
---     _, _, one   = GetTalentTabInfo(1)
---     _, _, two   = GetTalentTabInfo(2)
---     _, _, three = GetTalentTabInfo(3)
---     return one, two, three
--- end
-
-function UTILS.GetMyRole()
-    return GetTalentGroupRole(GetActiveTalentGroup())
+if CLM.WoW10 then
+    function UTILS.GetMyRole()
+        local currentSpec = GetSpecialization()
+        local role = "NONE"
+        if currentSpec then
+            _, _, _, _, role = GetSpecializationInfo(currentSpec)
+        end
+        return role
+    end
+elseif CLM.WoWSeasonal then
+    function UTILS.GetMyRole()
+        return "NONE" -- Not supported as it requires Role decoding based on spec
+    end
+else
+    function UTILS.GetMyRole()
+        return GetTalentGroupRole(GetActiveTalentGroup())
+    end
 end
 
 function UTILS.IsTooltipTextRed(text)
@@ -714,23 +802,51 @@ function UTILS.LibStSingleSelectClickHandler(st, dropdownMenu, rowFrame, cellFra
 end
 
 function UTILS.LibStItemCellUpdate(rowFrame, frame, data, cols, row, realrow, column, fShow, table, ...)
-    local itemId = data[realrow].cols[column].value
-    local iconColor = data[realrow].cols[column].iconColor
+    local itemInfo = data[realrow].cols[column].value
+    local iconColor = data[realrow].cols[column].iconColor or {}
     local note = data[realrow].cols[column].note
-    local _, _, _, _, icon = GetItemInfoInstant(itemId or 0)
+    local overlay = data[realrow].cols[column].overlay or {}
+    local desaturate = data[realrow].cols[column].desaturate and true or false
+    local _, _, _, _, icon = UTILS.GetItemInfoInstant(itemInfo or 0)
+
+    -- Reparent and rework text FontString
+    if frame.text:GetParent() ~= frame then
+        frame.text:SetParent(frame)
+        local font = frame.text:GetFont()
+        frame.text:SetFont(font, 18, "OUTLINE")
+        frame.text:SetTextColor(1.0, 1.0, 1.0, 1.0)
+        frame.text:SetShadowColor(0.0, 0.0, 0.0, 1.0)
+        -- frame.text:SetShadowOffset(3,-3)
+        frame.text:SetJustifyH("LEFT")
+        frame.text:SetJustifyV("BOTTOM")
+    end
+
     if icon then
         frame:SetNormalTexture(icon)
         frame:SetHighlightTexture(136580, "ADD")
         frame:GetHighlightTexture():SetTexCoord(0, 1, 0.23, 0.77)
-        if iconColor then
-            frame:GetNormalTexture():SetVertexColor(iconColor.r, iconColor.g, iconColor.b, iconColor.a or 1)
-        else
-            frame:GetNormalTexture():SetVertexColor(1,1,1,1)
-        end
+        frame:GetNormalTexture():SetVertexColor(iconColor.r or 1, iconColor.g or 1, iconColor.b or 1, iconColor.a or 1)
+        frame:GetNormalTexture():SetDesaturated(desaturate)
         frame:Show()
+
+        if overlay.text then
+            frame.text:SetText(tostring(overlay.text))
+            local textColor = overlay.color or {}
+            frame.text:SetTextColor(textColor.r or 1.0, textColor.g or 1.0, textColor.b or 1.0, textColor.a or 1.0)
+            local shadowColor = overlay.shadow or {}
+            frame.text:SetShadowColor(shadowColor.r or 0.0, shadowColor.g or 0.0, shadowColor.b or 0.0, shadowColor.a or 1.0)
+        end
+
         frame:SetScript("OnEnter", function()
             GameTooltip:SetOwner(frame, "ANCHOR_LEFT")
-            GameTooltip:SetHyperlink("item:" .. tostring(itemId))
+            local itemInfoType = type(itemInfo)
+            if itemInfoType == 'number' then
+                GameTooltip:SetHyperlink("item:" .. itemInfo)
+            elseif itemInfoType == 'string' then
+                GameTooltip:SetHyperlink(itemInfo)
+            else
+                return
+            end
             if note then
                 GameTooltip:AddLine("\n")
                 GameTooltip:AddLine(note)
@@ -747,19 +863,35 @@ end
 local CanonicalClass = UTILS.CanonicalClass
 function UTILS.LibStClassCellUpdate(rowFrame, frame, data, cols, row, realrow, column, fShow, table, ...)
     local class = data[realrow].cols[column].value
+    local desaturate = data[realrow].cols[column].desaturate and true or false
     if class and class ~= "" then
         frame:SetNormalTexture("Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES") -- this is the image containing all class icons
         local coords = CLASS_ICON_TCOORDS[CanonicalClass(class)]
         frame:GetNormalTexture():SetTexCoord(unpack(coords))
+        frame:GetNormalTexture():SetDesaturated(desaturate)
         frame:Show()
     else
         frame:Hide()
     end
 end
 
+function UTILS.LibStNameCellUpdate(rowFrame, frame, data, cols, row, realrow, column, fShow, table, ...)
+    local name = data[realrow].cols[column].value
+    table.DoCellUpdate(rowFrame, frame, data, cols, row, realrow, column, fShow, table, ...)
+    frame.text:SetText(Ambiguate(name or "", "none"))
+end
+
 function UTILS.getHighlightMethod(highlightColor, multiselect)
     return (function(rowFrame, cellFrame, data, cols, row, realrow, column, fShow, table, ...)
-        table.DoCellUpdate(rowFrame, cellFrame, data, cols, row, realrow, column, fShow, table, ...)
+        local fnDoCellUpdate
+        if data[realrow].cols[column].DoCellUpdate then
+            fnDoCellUpdate = data[realrow].cols[column].DoCellUpdate
+        elseif cols[column].DoCellUpdate then
+            fnDoCellUpdate = cols[column].DoCellUpdate;
+        else
+            fnDoCellUpdate = table.DoCellUpdate
+        end
+        fnDoCellUpdate(rowFrame, cellFrame, data, cols, row, realrow, column, fShow, table, ...)
         local color
         local selected
         if multiselect then
@@ -845,16 +977,22 @@ function UTILS.ResizeFrame(frame, up, scale)
     return scale
 end
 
-local invtypeWorkaround = {
+local invtypeClassWorkaround = {
     [2] = {
         [3] = "INVTYPE_RANGED", -- Weapon Guns
         [18] = "INVTYPE_RANGED",-- Weapon Crossbow
-    }
+    },
 }
 
-function UTILS.WorkaroundEquipLoc(class, subclass)
-    local classTable = invtypeWorkaround[class] or {}
-    return classTable[subclass]
+local invtypeEquipLocWorkaround = {
+    ["INVTYPE_NON_EQUIP_IGNORE"] = "INVTYPE_NON_EQUIP"
+}
+
+
+function UTILS.WorkaroundEquipLoc(class, subclass, equipLoc)
+    local classTable = invtypeClassWorkaround[class] or {}
+    local tempEquipLoc = classTable[subclass] or equipLoc
+    return invtypeEquipLocWorkaround[tempEquipLoc] or equipLoc
 end
 
 
@@ -888,6 +1026,87 @@ function UTILS.randomString(length, customCharset)
     return result
 end
 
+function UTILS.GetAuctionConditionalFieldName(key, auction, prefix, suffix)
+    local name
+    prefix = prefix or "["
+    suffix = suffix or "]"
+    if auction and auction:GetNamedButtonsMode() then
+        name = auction:GetFieldName(key)
+        if name == "" then name = nil end
+    end
+    if not name then
+        name = prefix .. CONSTANTS.SLOT_VALUE_TIERS_GUI[key] .. suffix
+    end
+    return name
+end
+
+function UTILS.GetRosterConditionalFieldName(key, roster, prefix, suffix)
+    local name
+    prefix = prefix or "["
+    suffix = suffix or "]"
+    if roster and roster:GetConfiguration("namedButtons") then
+        name = roster:GetFieldName(key)
+        if name == "" then name = nil end
+    end
+    if not name then
+        name = prefix .. CONSTANTS.SLOT_VALUE_TIERS_GUI[key] .. suffix
+    end
+    return name
+end
+
+-- TODO this doesnt look good in history, we dont want DKP displayed there really
+function UTILS.DecodePointTypeChangeName(pointType, changeType, displayDKP)
+    local points = displayDKP and CLM.L["DKP"] or "" -- not test_cameraDynamicPitch
+    if pointType == CONSTANTS.POINT_TYPE.EPGP then
+        if changeType == CONSTANTS.POINT_CHANGE_TYPE.SPENT then
+            points = CLM.L["GP"]
+        elseif changeType == CONSTANTS.POINT_CHANGE_TYPE.POINTS then
+            points = CLM.L["EP"]
+        else
+            points = CLM.L["EP/GP"]
+        end
+    end
+    return points
+end
+
+local raidChannels = UTILS.Set({"RAID", "RAID_WARNING"})
+function UTILS.SendChatMessage(message, channel, _, target)
+    if raidChannels[channel] and not IsInRaid() then return end
+    SendChatMessage("[CLM] " .. tostring(message), channel, nil, target)
+end
+
+---------------------------------
+--- Cross-flavor DEPRECATIONS ---
+---------------------------------
+local GetItemInfo = GetItemInfo or C_Item.GetItemInfo
+function UTILS.GetItemInfo(...)
+    return GetItemInfo(...)
+end
+
+local GetItemInfoInstant = GetItemInfoInstant or C_Item.GetItemInfoInstant
+function UTILS.GetItemInfoInstant(...)
+    return GetItemInfoInstant(...)
+end
+
+local GetAddOnInfo = GetAddOnInfo or C_AddOns.GetAddOnInfo
+function UTILS.GetAddOnInfo(...)
+    return GetAddOnInfo(...)
+end
+
+local GetContainerNumSlots = GetContainerNumSlots or C_Container.GetContainerNumSlots
+function UTILS.GetContainerNumSlots(...)
+    return GetContainerNumSlots(...)
+end
+
+local UseContainerItem = UseContainerItem or C_Container.UseContainerItem
+function UTILS.UseContainerItem(...)
+    return UseContainerItem(...)
+end
+
+-----------------
+--- CONSTANTS ---
+-----------------
+
 CONSTANTS.ITEM_QUALITY = {
     [0] = ColorCodeText(CLM.L["Poor"], "9d9d9d"),
     [1] = ColorCodeText(CLM.L["Common"], "ffffff"),
@@ -896,5 +1115,21 @@ CONSTANTS.ITEM_QUALITY = {
     [4] = ColorCodeText(CLM.L["Epic"], "a335ee"),
     [5] = ColorCodeText(CLM.L["Legendary"], "ff8000"),
 }
+CONSTANTS.LOOT_ROLL_TYPE_ANY = -2
+CONSTANTS.LOOT_ROLL_TYPE_IGNORE = -1
+CONSTANTS.LOOT_ROLL_TYPE_TRANSMOG = 4
+CONSTANTS.ROLL_TYPE = {
+    [CONSTANTS.LOOT_ROLL_TYPE_ANY]      = ColorCodeText(CLM.L["Any"], "ff8000"),
+    [CONSTANTS.LOOT_ROLL_TYPE_IGNORE]   = ColorCodeText(CLM.L["Do Nothing"], "9d9d9d"),
+    [LOOT_ROLL_TYPE_PASS]               = PASS,
+    [LOOT_ROLL_TYPE_NEED]               = ColorCodeText(NEED, "1eff00"),
+    [LOOT_ROLL_TYPE_GREED]              = ColorCodeText(GREED , "ffd100"),
+}
+if CLM.WoW10 or CLM.WoWCata then
+    CONSTANTS.ROLL_TYPE[LOOT_ROLL_TYPE_DISENCHANT]         = ColorCodeText(ROLL_DISENCHANT, "0070dd")
+    local TRANSMOGRIFICATION = TRANSMOGRIFICATION or "Transmogrification"
+    CONSTANTS.ROLL_TYPE[CONSTANTS.LOOT_ROLL_TYPE_TRANSMOG] = ColorCodeText(TRANSMOGRIFICATION, "a335ee")
+end
+
 CONSTANTS.REGEXP_FLOAT = "^-?%d+%.?%d*$"
 CONSTANTS.REGEXP_FLOAT_POSITIVE = "^%d+%.?%d*$"

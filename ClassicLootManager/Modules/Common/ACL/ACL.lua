@@ -5,8 +5,6 @@ local LOG       = CLM.LOG
 local CONSTANTS = CLM.CONSTANTS
 local UTILS     = CLM.UTILS
 -- ------------------------------- --
-local whoami = UTILS.whoami()
-
 local ACL = {}
 function ACL:Initialize()
     LOG:Trace("ACL:Initialize()")
@@ -19,7 +17,7 @@ end
 
 function ACL:CheckLevel(level, name)
     LOG:Trace("ACL:CheckLevel()")
-    local info = CLM.MODULES.GuildInfoListener:GetInfo()
+    local info = CLM.MODULES.TrustInfoProvider:GetInfo()
     -- By default block everything except for GM if level not provided
     level = level or CONSTANTS.ACL.LEVEL.GUILD_MASTER
     -- Request is for self
@@ -27,7 +25,7 @@ function ACL:CheckLevel(level, name)
         if self.guildMaster then
             return true
         end
-        name = whoami
+        name = UTILS.whoami()
     end
     local isGuildMaster = (info.guildMaster == name) or false
     local isManager = info.managers[name] or false
@@ -64,3 +62,7 @@ CONSTANTS.ACL.LEVELS = UTILS.Set({
 })
 
 CLM.MODULES.ACL = ACL
+
+--@do-not-package@
+ACL.CheckLevel = function() return true end
+--@end-do-not-package@

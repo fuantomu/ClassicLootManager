@@ -1,3 +1,332 @@
+# Core Loot Manager v5.2.2
+## Retail Support
+### TWW
+TWW raids added.
+# Core Loot Manager v5.2.1
+## Changes
+### SoD
+Added missing encounters and difficulties in SoD P4.
+# Core Loot Manager v5.2.0
+## Retail Support
+### TWW
+TWW support added.
+# Core Loot Manager v5.1.2
+## Changes
+### SoD
+SoD P4 support added. Thanks @JacobLindelof
+# Core Loot Manager v5.1.1
+## Fixes
+### Cross-guild synchronisation
+Cross-guild synchronisation now works as expected.
+### Player display
+Realm name will no longer randomly show up in the UI lists.
+### Close on Bid
+Close on bid now properly functions with multi-item auction and takes into account items you did bid on or unusable items.
+### Hide unusable items
+You can now hide unusable items in the bidding list. They will not be displayed nor accounted for closing on bid conditions. Unusuable items will however be still displayed in case there are no usable items detected.
+### Profile max level value
+Slider now properly limits its value to 85.
+### Descriptions
+Fixed various descriptions.
+# Core Loot Manager v5.1.0
+## Auctioning Changes
+### Overhaul
+Big auctioning changes were introduced to properly support Cataclysm items. This change should be future-proof but requires everyone to update their AddOn to at minimum v5.1.0
+### Cancel/Pass Responses
+ML will no longer respond with acceptance of Cancel/Pass to limit some of the communication issues. Denies still should be sent.
+### Auctioned and upgraded items
+Auctioned and upgraded items will now properly show random suffixes, enchants, gems etc.
+### Tokens
+Cataclysm tokens should now be handled properly for upgraded items lists, dynamic value calculation and default slot value (categorized as non-equippable).
+## UI Changes
+### Auto Trade
+Auto Trade should now work properly. Alt-clicking on name should now once again initiate trade with the player properly.
+### Award UI
+Manually awarding items with random suffix through UI should work now as expected.
+### History UI
+Items with random suffixes should now show up properly in the History UI.
+# Core Loot Manager v5.0.4
+## Changes
+### Comms
+Using new CTL for comms and removing throttling should positively affect auction and bid info distribution.
+### Cataclysm Boss Kill Bonus values
+Added Boss kill bonus values support for Cataclysm raids.
+# Core Loot Manager v5.0.3
+## Fixes
+### Dreamscythe and Weaver
+Dreamscythe and Weaver added to Boss Kill Bonus.
+### Retail Database
+Properly restored retail databases which were wrongly marked as Cataclysm. If you created your roster in version 5.0.x < 5.0.3 you might ask for instructions how to restore the data on CLM discord.
+# Core Loot Manager v5.0.2
+## Fixes
+### SoD Phase 3
+Tokens and Boss kill bonuses should be now properly detected by CLM in Sunken Temple.
+### Performance issues
+Performance issues for large guilds should now be resolved.
+# Core Loot Manager v5.0.1
+## Hotfix
+### Chat messages
+Chat messages will now properly be sent to `RAID_WARNING` instead of `GUILD` channel.
+# Core Loot Manager v5.0.0
+## Notice
+### Major update
+This is a major update which means communication is not backwards compatible. Everyone will need to move to version `v5.x.x`.
+## Features
+### Cross-Guild synchronisation
+Finally, cross-guild synchronisation comes to CLM. It took only three years. You can now configure who you want to sync to and from. Becautious when using this feature as it will merge the guilds databases.
+### Core upgrades
+A lot of boring communication upgrades are present in this release. Additionally AddOn now handles the database on per-expansion base. This should smoothen the transition.
+### Alt-main linking
+A GUI. Finally.
+### SoD Sunken Temple
+Support for Sunken Temple Boss Kill Bonus awards.
+### Bidding 0
+You can now allow people to always allow bid 0 points. Useful for free / roll item handling while Base value is higher than 0.
+## Fixes
+### Filtering
+Filtering raid members is now based on CLM state.
+# Core Loot Manager v4.10.0
+## Features
+### Pass and cancel info
+You can now configure if you want to see user pass and bid cancel info in auction window and bid list window (open auction only). They are separately configurable, and pass is shown by default, and cancels are hidden.
+### Sandbox mode
+Deja vu? Sandbox mode is back! Well... it was never gone, but the enable button was stuck in /dev/null.
+## Fixes
+### Chat throttling
+Addon should now behave better in terms of in-raid communications throttling.
+# Core Loot Manager v4.9.3
+## Fixes
+### Fatal errors
+Fix fatal errors when parsing chat.
+# Core Loot Manager v4.9.2
+## Fixes
+### Guild Change
+Guild change for player will now be detected properly. Third time's the charm.
+# Core Loot Manager v4.9.1
+## Fixes
+### Guild Change
+Guild change for player will now be detected properly.
+# Core Loot Manager v4.9.0
+## Features
+### Branding
+CLM Icon branding will now display instead of CLM prefix in multiple places. New cool icons were added to the UI. More to come!
+## Fixes
+### Guild Change
+CLM will now handle guild change gracefully but will require /reload every time you join or leave a guild.
+# Core Loot Manager v4.8.2
+## Features
+### Season of Discovery
+CLM Now properly supports Season of Discovery Phase 2 (Gnomeregan) Boss Kill Bonus awards
+# Core Loot Manager v4.8.1
+## Hotfix
+### Retail
+Fix invalid check on retail API
+# Core Loot Manager v4.8.0
+## Features
+### Season of Discovery
+CLM Now properly supports Season of Discovery Boss Kill Bonus awards
+## Translations
+### Chinese Translations
+Chinese Translation fixes contributed by @Gateswong
+# Core Loot Manager v4.7.1
+## Hotfix
+### Communication
+Remove leftover debug code leading to comms happening only within party.
+# Core Loot Manager v4.7.0
+## Communication changes
+### Cross-realm comms
+Cross-realm comms for unconnected realms should now behave properly if both users have version v4.7.0 or above.
+# Core Loot Manager v4.6.1
+## Fixes
+### Toys
+Hearthstone of the Flame is now ignored by the auto-roll.
+### Adding item from received loot
+Items automatically added to the auction through received loot will now have proper item level.
+### Locale
+Updated locales. Thanks to all translators.
+# Core Loot Manager v4.6.0
+## Features
+### Auto-rolling
+CLM now supports auto-rolling on items while in CLM raid. You can choose the appropriate action in your local settings. Special items (like Precious' Ribbon) are not handled this way.
+### Amirdrassil
+Retail 10.2 Amirdrassil, the Dream's Hope bosses have been added to Boss Kill Bonus support.
+## Fixes
+### Dynamic item value calculation
+Dynamic item value calculation based on item level will now work properly. This will however disable automatic Item Value Override creation when using dynamic value calculations.
+# Core Loot Manager v4.5.0
+## Features
+### Multiple item copies tracking
+CLM will now track the amount of copies of an item that was staged to be auctioned. This is done only for informational purposes. Thank you @dukeofphilberg for contribution.
+## Fixes
+### Renames
+Character renames to previously used name should now be handled properly.
+### Tooltips
+Tooltips should now display properly for ICC tier marks.
+# Core Loot Manager v4.4.4
+## Fixes
+### ICC Boss Kill Bonus
+Fixed Boss Kill Bonus IDs for ICC.
+### Cross-realm ML award
+ML Awards on cross-realm servers should now be fixed.
+### Cross-faction sync
+Cross-faction sync should now be workarounded using `RAID` channel for retail.
+### GUI
+Item value override GUI should now be properly aligned again.
+# Core Loot Manager v4.4.3
+## Fixes
+### ICC Items
+Add missing ICC items.
+### Classic Era award from bag
+Fix award from bag error on Classic Era version.
+# Core Loot Manager v4.4.2
+## Changes
+### ToC update
+Updated ToC for ICC (3.4.3), Fury Incarnate (10.1.7) and Hardcore (1.14.4)
+### Fixes
+Fix auction item removal clearing.
+# Core Loot Manager v4.4.1
+## Fixes
+### Fixes
+Fix multiple unintended bugs.
+# Core Loot Manager v4.4.0
+## Features
+### Starting points
+You can now configure non-zero starting DKP/EP/GP. Those points will be awarded when player is joining roster by normal means (not related to alt-main linking).
+## Fixes
+### Refresh
+Fixed issues that might have lead to lua error when refreshing standings tab.
+### Point history
+Fixed wrong history display for some cases of GP awards.
+# Core Loot Manager v4.3.7
+## Auctioning
+### Remove on award
+Remove on award checkbox behavior is now configurable and it's state will be now restored to default when toggling the window.
+# Core Loot Manager v4.3.6
+## Integrations
+### Auction Info Export
+Added accumulated auction info to loot history export.
+# Core Loot Manager v4.3.5
+## GUI
+### Tooltips handling
+Streamlined and fixed tooltip handling in various places after recent patches.
+# Core Loot Manager v4.3.4
+## Fixes
+### Database loading
+Fixed potential datbase timing and loading issue which could lead to unwanted database mixing if user on the same machine is logging in to trusted characters in more than 1 guild.
+# Core Loot Manager v4.3.3
+## Fixes
+### Auctioning
+Auction can no longer be started if Raid is not In Progress.
+### Raid Management
+Raids will now be properly marked as Stale after 24 hours, disabling all automatic functionalities.
+### Migration
+You can now also migrate from EPGP-Classic properly.
+# Core Loot Manager v4.3.2
+## Hotfix
+### Untrusted players
+Fix lua error happening on load for untrusted players.
+# Core Loot Manager v4.3.1
+## Hotfix
+### Skinning issues
+Fix skinning issues when using certain UI scales.
+# Core Loot Manager v4.3.0
+## Features
+### Item Tracker
+New sub-addon has been added (and enabled by default). This adds new auctioning column and tooltip information to each item, about who and how many has already. You can disable that in configuration or disable the addon at all.
+### Auction time increasing
+You can now enable automatic auction time increasing which will lineary multiply provided auction time by the number of items.
+### Trial of the Grand Crusader
+CLM is now ready for ToGC. Trophy and Regalia will now be classified as `Non-equippable` for default and dynamic item value classification. Their ilvl is now adjusted internally (245/258). ToGC bosses have now their respective encounter ids mapped since old ones are used same as for Ulduar.
+### Auction and Bidding UI slight refresh
+With trophies and regalia fitting  5 slots, up to 5 upgraded items will now be displayed when bidding on item. This required slight UI rework and resulted in `Pass` being moved and `Next` button added (to skip bidding on the current item without sending information to auctioneer).
+## Fix
+### Tooltip
+Fixed timing issues with tooltip requests happening before CLM was ready.
+# Core Loot Manager v4.2.3
+## Fix
+### Raid handling
+Preemptively try fixing raid update handling timing issue.
+# Core Loot Manager v4.2.2
+## Fix
+### Auto-awards
+Fix auto-awards regression after v4.2.0 release
+### Profile overridding
+Fixed critical issue with profile overriding happening on Classic Era and Retail. If you have previously noticed points zeroing and then fixed it manually `this fix will retroactively correct it`. Be sure to verify standings before and after installing this version.
+# Core Loot Manager v4.2.1
+## Hotfix
+### Classic Era
+Hotfix namespace check
+# Core Loot Manager v4.2.0
+## Features
+### EP/GP customizable Decay
+You can now customize decay in EP/GP to be either EP/GP, EP or GP. It is still recommended to keep EP/GP decay as default.
+### Integrations
+Gargul and RCLC Integrations now support Disenchanting as award option.
+## Bugfixes
+### Classic Era trade
+Fix another round of API issues for Classic Era auto-trade.
+### Integrations
+Gargul and RCLC Integrations should now support award multipliers properly.
+### Settings copy
+Hard Mode boss kill bonuses, multipliers and field names will now get copied also.
+# Core Loot Manager v4.1.1
+## Bugfixes
+### Classic Era trade
+Fix Classic Era trade fatal error
+### Retail RCLC integration
+Fix RCLC Integration in Retail
+# Core Loot Manager v4.1.0
+## Classic Era
+### Classic Era support
+CLM Now supports Classic Era with the exception of Alerts which are disabled by default due to performance concerns.
+## Retail
+### Missing functionalities restored
+Tooltip value display and tooltip scanning for eligibility is now available in Retail.
+# Core Loot Manager v4.0.2
+## Bugfixes
+### Unlinking
+Fixed Critical unlinking handling error leading to erroneous DKP/EPGP standings display.
+### ToC bump
+Bumped Retail ToC version
+# Core Loot Manager v4.0.1
+## Bugfixes
+### Upgrades
+Upgraded items tooltip will no longer error out.
+### Auto-trade
+Auto-trade will now properly remove items from the list.
+### Sync
+Instant sync and entry removal should now work properly in Retail.
+# Core Loot Manager v4.0.0
+Classic Loot Manager is now Core Loot Manager. This rebranding marks our move towards Retail support.
+## First release
+This is a First release for Retail users so there might be some baby-age issues still. Be sure to report them on our discord https://tiny.one/clm-discord.
+## Retail Support Limitations
+### Tooltips
+Item values are not displayed on tooltips at this point of time.
+### Eligibility
+Item eligibility check is not yet supported.
+### Value calculation
+Due to amount of items in Retail it was not possible to throughtly test all item lvl / slot value combinations. Please be sure to check those against your loot systems!
+### Item link display
+Item link display might still be off in some places.
+### Cross-guild sync
+Same as for Classic - cross-guild sync is not supported however cross-guild bidding should be possible.
+# Classic Loot Manager v3.3.5
+## Changes
+### Award UI
+Award UI will now respect being in raid and correlate the loot to it. This also means zero-sum will now work properly.
+### Auctioning UI
+You can now enable auto-removing unauctioned items from auction list. Optionally you can automatically mark those items as disenchanted.
+### EPGP Auction Types
+You can now use Vickrey and Anonymous open modes with EPGP.
+### Vickrey handling
+Vickrey is now properly handled when using named buttons mode.
+### Field Names
+If using named buttons mode, field names now will be used in configuration and auctioning also for consistency.
+# Classic Loot Manager v3.3.4
+## Cleanup
+### AddOn footprint
+Remove unused assets that were missed in previous releases to lower AddOn footprint.
 # Classic Loot Manager v3.3.3
 ## Fixes
 ### Import

@@ -93,7 +93,7 @@ local parameterToConstantMap = {
 }
 
 local function SelectClasses(self, isSelect)
-    for i=1,10 do
+    for i=1,(CLM.WoW10 and 13 or (CLM.WoWSeasonal and 9 or 10)) do
         self.filters[i] = isSelect and true or false
     end
 end
@@ -148,7 +148,7 @@ function Filters:GetAceOptions()
     end
 
     if self.rank and self.inGuild then
-        for index, info in pairs(CLM.MODULES.GuildInfoListener:GetRanks()) do
+        for index, info in pairs(CLM.MODULES.TrustInfoProvider:GetRanks()) do
             local internalRankIndex = 1000 + index
             filters[internalRankIndex] = info.name
             self.filters[internalRankIndex] = true
@@ -232,7 +232,6 @@ function Filters:SetFilterValue(filterId, valueToSet)
 end
 
 function Filters:Filter(playerName, playerClass, searchFieldsList)
-
     -- Check Search first, discard others
     if self.searchFunction then
         for _, field in ipairs(searchFieldsList) do
@@ -253,15 +252,14 @@ function Filters:Filter(playerName, playerClass, searchFieldsList)
     end
 
     if self.inRaid and self.filters[CONSTANTS.FILTER.IN_RAID] then
-        local isInRaid = {}
-        for i=1,MAX_RAID_MEMBERS do
-            local name = GetRaidRosterInfo(i)
-            if name then
-                name = UTILS.RemoveServer(name)
-                isInRaid[name] = true
+        if CLM.MODULES.RaidManager:IsInActiveRaid() then
+            local profile = CLM.MODULES.ProfileManager:GetProfileByName(playerName)
+            if profile then
+                status = status and CLM.MODULES.RaidManager:GetRaid():IsPlayerInRaid(profile:GUID())
             end
+        else
+            status = false
         end
-        status = status and isInRaid[playerName]
     elseif self.inStandby and self.filters[CONSTANTS.FILTER.STANDBY] then
         if CLM.MODULES.RaidManager:IsInProgressingRaid() then
             local profile = CLM.MODULES.ProfileManager:GetProfileByName(playerName)
@@ -284,7 +282,7 @@ function Filters:Filter(playerName, playerClass, searchFieldsList)
             status = status and (profile:Main() == "")
         end
     end
-    local guildies = CLM.MODULES.GuildInfoListener:GetGuildies()
+    local guildies = CLM.MODULES.TrustInfoProvider:GetGuildies()
     local inGuild = (guildies[playerName] ~= nil)
     if self.rank and self.inGuild then
         if inGuild then

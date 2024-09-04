@@ -1,6 +1,640 @@
 local  _, CLM = ...
 CLM.ChangelogData = {
     {
+        version = "v5.2.2",
+        data = {
+            {
+                name = "Retail Support",
+                data = {
+                    { header = "TWW", body = "TWW raids added." },
+                },
+            },
+        },
+    },
+    {
+        version = "v5.2.1",
+        data = {
+            {
+                name = "Changes",
+                data = {
+                    { header = "SoD", body = "Added missing encounters and difficulties in SoD P4." },
+                },
+            },
+        },
+    },
+    {
+        version = "v5.2.0",
+        data = {
+            {
+                name = "Retail Support",
+                data = {
+                    { header = "TWW", body = "TWW support added." },
+                },
+            },
+        },
+    },
+    {
+        version = "v5.1.2",
+        data = {
+            {
+                name = "Changes",
+                data = {
+                    { header = "SoD", body = "SoD P4 support added. Thanks @JacobLindelof" },
+                },
+            },
+        },
+    },
+    {
+        version = "v5.1.1",
+        data = {
+            {
+                name = "Fixes",
+                data = {
+                    { header = "Cross-guild synchronisation", body = "Cross-guild synchronisation now works as expected." },
+                    { header = "Player display", body = "Realm name will no longer randomly show up in the UI lists." },
+                    { header = "Close on Bid", body = "Close on bid now properly functions with multi-item auction and takes into account items you did bid on or unusable items." },
+                    { header = "Hide unusable items", body = "You can now hide unusable items in the bidding list. They will not be displayed nor accounted for closing on bid conditions. Unusuable items will however be still displayed in case there are no usable items detected." },
+                    { header = "Profile max level value", body = "Slider now properly limits its value to 85." },
+                    { header = "Descriptions", body = "Fixed various descriptions." },
+                },
+            },
+        },
+    },
+    {
+        version = "v5.1.0",
+        data = {
+            {
+                name = "Auctioning Changes",
+                data = {
+                    { header = "Overhaul", body = "Big auctioning changes were introduced to properly support Cataclysm items. This change should be future-proof but requires everyone to update their AddOn to at minimum v5.1.0" },
+                    { header = "Cancel/Pass Responses", body = "ML will no longer respond with acceptance of Cancel/Pass to limit some of the communication issues. Denies still should be sent." },
+                    { header = "Auctioned and upgraded items", body = "Auctioned and upgraded items will now properly show random suffixes, enchants, gems etc." },
+                    { header = "Tokens", body = "Cataclysm tokens should now be handled properly for upgraded items lists, dynamic value calculation and default slot value (categorized as non-equippable)." },
+                },
+            },
+            {
+                name = "UI Changes",
+                data = {
+                    { header = "Auto Trade", body = "Auto Trade should now work properly. Alt-clicking on name should now once again initiate trade with the player properly." },
+                    { header = "Award UI", body = "Manually awarding items with random suffix through UI should work now as expected." },
+                    { header = "History UI", body = "Items with random suffixes should now show up properly in the History UI." },
+                },
+            },
+        },
+    },
+    {
+        version = "v5.0.4",
+        data = {
+            {
+                name = "Changes",
+                data = {
+                    { header = "Comms", body = "Using new CTL for comms and removing throttling should positively affect auction and bid info distribution." },
+                    { header = "Cataclysm Boss Kill Bonus values", body = "Added Boss kill bonus values support for Cataclysm raids." },
+                },
+            },
+        },
+    },
+    {
+        version = "v5.0.3",
+        data = {
+            {
+                name = "Fixes",
+                data = {
+                    { header = "Dreamscythe and Weaver", body = "Dreamscythe and Weaver added to Boss Kill Bonus." },
+                    { header = "Retail Database", body = "Properly restored retail databases which were wrongly marked as Cataclysm. If you created your roster in version 5.0.x < 5.0.3 you might ask for instructions how to restore the data on CLM discord." },
+                },
+            },
+        },
+    },
+    {
+        version = "v5.0.2",
+        data = {
+            {
+                name = "Fixes",
+                data = {
+                    { header = "SoD Phase 3", body = "Tokens and Boss kill bonuses should be now properly detected by CLM in Sunken Temple." },
+                    { header = "Performance issues", body = "Performance issues for large guilds should now be resolved." },
+                },
+            },
+        },
+    },
+    {
+        version = "v5.0.1",
+        data = {
+            {
+                name = "Hotfix",
+                data = {
+                    { header = "Chat messages", body = "Chat messages will now properly be sent to `RAID_WARNING` instead of `GUILD` channel." },
+                },
+            },
+        },
+    },
+    {
+        version = "v5.0.0",
+        data = {
+            {
+                name = "Notice",
+                data = {
+                    { header = "Major update", body = "This is a major update which means communication is not backwards compatible. Everyone will need to move to version `v5.x.x`." },
+                },
+            },
+            {
+                name = "Features",
+                data = {
+                    { header = "Cross-Guild synchronisation", body = "Finally, cross-guild synchronisation comes to CLM. It took only three years. You can now configure who you want to sync to and from. Becautious when using this feature as it will merge the guilds databases." },
+                    { header = "Core upgrades", body = "A lot of boring communication upgrades are present in this release. Additionally AddOn now handles the database on per-expansion base. This should smoothen the transition." },
+                    { header = "Alt-main linking", body = "A GUI. Finally." },
+                    { header = "SoD Sunken Temple", body = "Support for Sunken Temple Boss Kill Bonus awards." },
+                    { header = "Bidding 0", body = "You can now allow people to always allow bid 0 points. Useful for free / roll item handling while Base value is higher than 0." },
+                },
+            },
+            {
+                name = "Fixes",
+                data = {
+                    { header = "Filtering", body = "Filtering raid members is now based on CLM state." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.10.0",
+        data = {
+            {
+                name = "Features",
+                data = {
+                    { header = "Pass and cancel info", body = "You can now configure if you want to see user pass and bid cancel info in auction window and bid list window (open auction only). They are separately configurable, and pass is shown by default, and cancels are hidden." },
+                    { header = "Sandbox mode", body = "Deja vu? Sandbox mode is back! Well... it was never gone, but the enable button was stuck in /dev/null." },
+                },
+            },
+            {
+                name = "Fixes",
+                data = {
+                    { header = "Chat throttling", body = "Addon should now behave better in terms of in-raid communications throttling." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.9.3",
+        data = {
+            {
+                name = "Fixes",
+                data = {
+                    { header = "Fatal errors", body = "Fix fatal errors when parsing chat." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.9.2",
+        data = {
+            {
+                name = "Fixes",
+                data = {
+                    { header = "Guild Change", body = "Guild change for player will now be detected properly. Third time's the charm." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.9.1",
+        data = {
+            {
+                name = "Fixes",
+                data = {
+                    { header = "Guild Change", body = "Guild change for player will now be detected properly." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.9.0",
+        data = {
+            {
+                name = "Features",
+                data = {
+                    { header = "Branding", body = "CLM Icon branding will now display instead of CLM prefix in multiple places. New cool icons were added to the UI. More to come!" },
+                },
+            },
+            {
+                name = "Fixes",
+                data = {
+                    { header = "Guild Change", body = "CLM will now handle guild change gracefully but will require /reload every time you join or leave a guild." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.8.2",
+        data = {
+            {
+                name = "Features",
+                data = {
+                    { header = "Season of Discovery", body = "CLM Now properly supports Season of Discovery Phase 2 (Gnomeregan) Boss Kill Bonus awards" },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.8.0",
+        data = {
+            {
+                name = "Features",
+                data = {
+                    { header = "Season of Discovery", body = "CLM Now properly supports Season of Discovery Boss Kill Bonus awards" },
+                },
+            },
+            {
+                name = "Translations",
+                data = {
+                    { header = "Chinese Translations", body = "Chinese Translation fixes contributed by @Gateswong" },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.7.0",
+        data = {
+            {
+                name = "Communication changes",
+                data = {
+                    { header = "Cross-realm comms", body = "Cross-realm comms for unconnected realms should now behave properly if both users have version v4.7.0 or above." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.6.1",
+        data = {
+            {
+                name = "Fixes",
+                data = {
+                    { header = "Toys", body = "Hearthstone of the Flame is now ignored by the auto-roll." },
+                    { header = "Adding item from received loot", body = "Items automatically added to the auction through received loot will now have proper item level." },
+                    { header = "Locale", body = "Updated locales. Thanks to all translators." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.6.0",
+        data = {
+            {
+                name = "Features",
+                data = {
+                    { header = "Auto-rolling", body = "CLM now supports auto-rolling on items while in CLM raid. You can choose the appropriate action in your local settings. Special items (like Precious' Ribbon) are not handled this way." },
+                    { header = "Amirdrassil", body = "Retail 10.2 Amirdrassil, the Dream's Hope bosses have been added to Boss Kill Bonus support." },
+                },
+            },
+            {
+                name = "Fixes",
+                data = {
+                    { header = "Dynamic item value calculation", body = "Dynamic item value calculation based on item level will now work properly. This will however disable automatic Item Value Override creation when using dynamic value calculations." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.5.0",
+        data = {
+            {
+                name = "Features",
+                data = {
+                    { header = "Multiple item copies tracking", body = "CLM will now track the amount of copies of an item that was staged to be auctioned. This is done only for informational purposes. Thank you @dukeofphilberg for contribution." },
+                },
+            },
+            {
+                name = "Fixes",
+                data = {
+                    { header = "Renames", body = "Character renames to previously used name should now be handled properly." },
+                    { header = "Tooltips", body = "Tooltips should now display properly for ICC tier marks." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.4.4",
+        data = {
+            {
+                name = "Fixes",
+                data = {
+                    { header = "ICC Boss Kill Bonus", body = "Fixed Boss Kill Bonus IDs for ICC." },
+                    { header = "Cross-realm ML award", body = "ML Awards on cross-realm servers should now be fixed." },
+                    { header = "Cross-faction sync", body = "Cross-faction sync should now be workarounded using `RAID` channel for retail." },
+                    { header = "GUI", body = "Item value override GUI should now be properly aligned again." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.4.3",
+        data = {
+            {
+                name = "Fixes",
+                data = {
+                    { header = "ICC Items", body = "Add missing ICC items." },
+                    { header = "Classic Era award from bag", body = "Fix award from bag error on Classic Era version." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.4.2",
+        data = {
+            {
+                name = "Changes",
+                data = {
+                    { header = "ToC update", body = "Updated ToC for ICC (3.4.3), Fury Incarnate (10.1.7) and Hardcore (1.14.4)" },
+                    { header = "Fixes", body = "Fix auction item removal clearing." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.4.1",
+        data = {
+            {
+                name = "Fixes",
+                data = {
+                    { header = "Fixes", body = "Fix multiple unintended bugs." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.4.0",
+        data = {
+            {
+                name = "Features",
+                data = {
+                    { header = "Starting points", body = "You can now configure non-zero starting DKP/EP/GP. Those points will be awarded when player is joining roster by normal means (not related to alt-main linking)." },
+                },
+            },
+            {
+                name = "Fixes",
+                data = {
+                    { header = "Refresh", body = "Fixed issues that might have lead to lua error when refreshing standings tab." },
+                    { header = "Point history", body = "Fixed wrong history display for some cases of GP awards." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.3.7",
+        data = {
+            {
+                name = "Auctioning",
+                data = {
+                    { header = "Remove on award", body = "Remove on award checkbox behavior is now configurable and it's state will be now restored to default when toggling the window." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.3.6",
+        data = {
+            {
+                name = "Integrations",
+                data = {
+                    { header = "Auction Info Export", body = "Added accumulated auction info to loot history export." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.3.5",
+        data = {
+            {
+                name = "GUI",
+                data = {
+                    { header = "Tooltips handling", body = "Streamlined and fixed tooltip handling in various places after recent patches." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.3.4",
+        data = {
+            {
+                name = "Fixes",
+                data = {
+                    { header = "Database loading", body = "Fixed potential datbase timing and loading issue which could lead to unwanted database mixing if user on the same machine is logging in to trusted characters in more than 1 guild." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.3.3",
+        data = {
+            {
+                name = "Fixes",
+                data = {
+                    { header = "Auctioning", body = "Auction can no longer be started if Raid is not In Progress." },
+                    { header = "Raid Management", body = "Raids will now be properly marked as Stale after 24 hours, disabling all automatic functionalities." },
+                    { header = "Migration", body = "You can now also migrate from EPGP-Classic properly." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.3.2",
+        data = {
+            {
+                name = "Hotfix",
+                data = {
+                    { header = "Hotfix", body = "Fix lua error happening on load for untrusted players." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.3.1",
+        data = {
+            {
+                name = "Hotfix",
+                data = {
+                    { header = "Hotfix", body = "Fix skinning issues when using certain UI scales." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.3.0",
+        data = {
+            {
+                name = "Features",
+                data = {
+                    { header = "Item Tracker", body = "New sub-addon has been added (and enabled by default). This adds new auctioning column and tooltip information to each item, about who and how many has already. You can disable that in configuration or disable the addon at all." },
+                    { header = "Auction time increasing", body = "You can now enable automatic auction time increasing which will lineary multiply provided auction time by the number of items." },
+                    { header = "Trial of the Grand Crusader", body = "CLM is now ready for ToGC. Trophy and Regalia will now be classified as Non-equippable for default and dynamic item value classification. Their ilvl is now adjusted internally (245/258). ToGC bosses have now their respective encounter ids mapped since old ones are used same as for Ulduar." },
+                    { header = "Auction and Bidding UI slight refresh", body = "With trophies and regalia fitting  5 slots, up to 5 upgraded items will now be displayed when bidding on item. This required slight UI rework and resulted in Pass being moved and Next button added (to skip bidding on the current item without sending information to auctioneer)." },
+                },
+            },
+            {
+                name = "Fix",
+                data = {
+                    { header = "Tooltip", body = "Fixed timing issues with tooltip requests happening before CLM was ready." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.2.3",
+        data = {
+            {
+                name = "Fix",
+                data = {
+                    { header = "Raid handling", body = "Preemptively try fixing raid update handling timing issue." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.2.2",
+        data = {
+            {
+                name = "Fix",
+                data = {
+                    { header = "Auto-awards", body = "Fix auto-awards regression after v4.2.0 release" },
+                    { header = "Profile overridding", body = "Fixed critical issue with profile overriding happening on Classic Era and Retail. If you have previously noticed points zeroing and then fixed it manually this fix will retroactively correct it. Be sure to verify standings before and after installing this version." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.2.1",
+        data = {
+            {
+                name = "Hotfix",
+                data = {
+                    { header = "Hotfix", body = "Hotfix for Fatal error on Classic Era" },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.2.0",
+        data = {
+            {
+                name = "Features",
+                data = {
+                    { header = "EP/GP customizable Decay", body = "You can now customize decay in EP/GP to be either EP/GP, EP or GP. It is still recommended to keep EP/GP decay as default." },
+                    { header = "Integrations", body = "Gargul and RCLC Integrations now support Disenchanting as award option." },
+                },
+            },
+            {
+                name = "Bugfixes",
+                data = {
+                    { header = "Classic Era trade", body = "Fix another round of API issues for Classic Era auto-trade." },
+                    { header = "Integrations", body = "Gargul and RCLC Integrations should now support award multipliers properly." },
+                    { header = "Settings copy", body = "Hard Mode boss kill bonuses, multipliers and field names will now get copied also." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.1.1",
+        data = {
+            {
+                name = "Bugfixes",
+                data = {
+                    { header = "Classic Era trade", body = "Fix Classic Era trade fatal error" },
+                    { header = "Retail RCLC integration", body = "Fix RCLC Integration in Retail" },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.1.0",
+        data = {
+            {
+                name = "Classic Era",
+                data = {
+                    { header = "Classic Era support", body = "CLM Now supports Classic Era with the exception of Alerts which are disabled by default due to performance concerns." },
+                },
+            },
+            {
+                name = "Retail",
+                data = {
+                    { header = "Missing functionalities restored", body = "Tooltip value display and tooltip scanning for eligibility is now available in Retail." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.0.2",
+        data = {
+            {
+                name = "Bugfixes",
+                data = {
+                    { header = "Unlinking", body = "Fixed Critical unlinking handling error leading to erroneous DKP/EPGP standings display." },
+                    { header = "ToC bump", body = "Bumped Retail ToC version" },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.0.1",
+        data = {
+            {
+                name = "Bugfixes",
+                data = {
+                    { header = "Upgrades", body = "Upgraded items tooltip will no longer error out." },
+                    { header = "Auto-trade", body = "Auto-trade will now properly remove items from the list." },
+                    { header = "Sync", body = "Instant sync and entry removal should now work properly in Retail." },
+                },
+            },
+        },
+    },
+    {
+        version = "v4.0.0",
+        data = {
+            {
+                name = "Retail support is live!",
+                data = {
+                    { header = "Rebranding", body = "Classic Loot Manager is now |cff44ee44Core Loot Manager|r. This rebranding marks our move towards Retail support." },
+                    { header = "First release", body = "This is a First release for Retail users so there might be some baby-age issues still. Be sure to report them on our discord https://tiny.one/clm-discord." },
+                },
+            },
+            {
+                name = "Retail Support Limitations",
+                data = {
+                    { header = "Tooltips", body = "Item values are not displayed on tooltips at this point of time." },
+                    { header = "Eligibility", body = "Item eligibility check is not yet supported." },
+                    { header = "Value calculation", body = "Due to amount of items in Retail it was not possible to throughtly test all item lvl / slot value combinations. Please be sure to check those against your loot systems!" },
+                    { header = "Item link display", body = "Item link display might still be off in some places." },
+                    { header = "Cross-guild sync", body = "Same as for Classic - cross-guild sync is not supported however cross-guild bidding should be possible." },
+                },
+            },
+        },
+    },
+    {
+        version = "v3.3.5",
+        data = {
+            {
+                name = "Changes",
+                data = {
+                    { header = "Award UI", body = "Award UI will now respect being in raid and correlate the loot to it. This also means zero-sum will now work properly." },
+                    { header = "Auctioning UI", body = "You can now enable auto-removing unauctioned items from auction list. Optionally you can automatically mark those items as disenchanted." },
+                    { header = "EPGP Auction Types", body = "You can now use Vickrey and Anonymous open modes with EPGP." },
+                    { header = "Vickrey handling", body = "Vickrey is now properly handled when using named buttons mode." },
+                    { header = "Field Names", body = "If using named buttons mode, field names now will be used in configuration and auctioning also for consistency." },
+                },
+            },
+        },
+    },
+    {
+        version = "v3.3.4",
+        data = {
+            {
+                name = "Cleanup",
+                data = {
+                    { header = "AddOn footprint", body = "Remove unused assets that were missed in previous releases to lower AddOn footprint." },
+                },
+            },
+        },
+    },
+    {
         version = "v3.3.3",
         data = {
             {
@@ -31,7 +665,7 @@ CLM.ChangelogData = {
             {
                 name = "Features",
                 data = {
-                    { header = "Rolling", body = "You can now allow players in your raid to `/roll` for an item as a separte or additional step in your auctioning process. This is a very simple mechanism to enhance the existing built-in rolling." },
+                    { header = "Rolling", body = "You can now allow players in your raid to /roll for an item as a separte or additional step in your auctioning process. This is a very simple mechanism to enhance the existing built-in rolling." },
                 },
             },
             {

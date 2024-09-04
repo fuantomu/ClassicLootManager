@@ -75,7 +75,6 @@ function ConfigManager:Register(group, options, clean)
     for option, definition in pairs(options) do
         self.options[group].args[option] = definition
     end
-
     return true
 end
 
@@ -131,18 +130,15 @@ CLM.MODULES.ConfigManager = ConfigManager
 
 CONSTANTS.CONFIGS = {
     GROUPS = UTILS.Set({
-        "Classic Loot Manager",
+        "Core Loot Manager",
         CLM.L["Rosters"],
-        -- CLM.L["Integrations"]
     }),
     ORDERED_GROUPS = {
-        "Classic Loot Manager",
+        "Core Loot Manager",
         CLM.L["Rosters"],
-        -- CLM.L["Integrations"]
     },
     GROUP = {
-        GLOBAL = "Classic Loot Manager",
+        GLOBAL = "Core Loot Manager",
         ROSTER = CLM.L["Rosters"],
-        -- INTEGRATIONS = CLM.L["Integrations"]
     },
 }

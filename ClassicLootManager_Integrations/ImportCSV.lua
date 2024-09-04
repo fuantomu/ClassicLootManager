@@ -1,9 +1,8 @@
 -- ------------------------------- --
 local _, PRIV = ...
-local CLM = LibStub("ClassicLootManager").CLM
 -- ------ CLM common cache ------- --
 local LOG       = CLM.LOG
--- local UTILS     = CLM.UTILS
+local UTILS     = CLM.UTILS
 -- ------------------------------- --
 
 -- Libs
@@ -46,7 +45,7 @@ local function ParseCSV(csvData)
         if line and strlen(line) > 0 then
             local itemId, b, s, m, l, x = strsplit(",",line)
             itemId = tonumber(itemId)
-            if GetItemInfoInstant(itemId) then
+            if UTILS.GetItemInfoInstant(itemId) then
                 data[#data+1] = {
                     itemId = itemId,
                     values = {
@@ -124,7 +123,7 @@ local function UpdateOptions(self)
             local order = 10
             for _,data in ipairs(self.data) do
                 local prefix = tostring(data.itemId)
-                local _, _, _, _, icon = GetItemInfoInstant(data.itemId)
+                local _, _, _, _, icon = UTILS.GetItemInfoInstant(data.itemId)
                 local shortItemLink = "item:" .. prefix
                 options.args[prefix .. "icon"] = {
                     name = "",

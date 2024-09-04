@@ -1,6 +1,5 @@
 -- ------------------------------- --
 local _, PRIV = ...
-local CLM = LibStub("ClassicLootManager").CLM
 -- ------ CLM common cache ------- --
 local LOG       = CLM.LOG
 local UTILS     = CLM.UTILS
@@ -11,7 +10,10 @@ local getGuidFromInteger = UTILS.getGuidFromInteger
 local EXTERNAL_AWARD_EVENT = "CLM_EXTERNAL_EVENT_ITEM_AWARDED"
 local RCLC_AWARD_EVENT = "RCMLAwardSuccess"
 
-local _, _, _, isRCLC = GetAddOnInfo("RCLootCouncil_Classic")
+local _, _, _, isRCLC_Retail = UTILS.GetAddOnInfo("RCLootCouncil")
+local _, _, _, isRCLC_Classic = UTILS.GetAddOnInfo("RCLootCouncil_Classic")
+
+local isRCLC = isRCLC_Retail or isRCLC_Classic
 
 PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION = {
     NONE = 1,
@@ -20,7 +22,8 @@ PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION = {
     AWARD_FOR_SMALL = 4,
     AWARD_FOR_MEDIUM = 5,
     AWARD_FOR_LARGE = 6,
-    AWARD_FOR_MAX = 7
+    AWARD_FOR_MAX = 7,
+    DISENCHANT = 8
 }
 
 local function InitializeDB(key)
@@ -75,7 +78,7 @@ local function StoreWoWDKPBotData(self)
                     time = lootEntry:Timestamp(),
                     value = lootEntry:Value()
                 }
-                local lootName = GetItemInfo(lootEntry:Id())
+                local lootName = UTILS.GetItemInfo(lootEntry:Id())
                 loot.name = lootName or "???"
                 tinsert(data.loot, loot)
             end
@@ -409,7 +412,7 @@ local function getAwardValueFromAction(roster, itemId, action)
     return values[tier] or 0
 end
 
--- LootManager:AwardItem(raidOrRoster, name, itemLink, itemId, value, forceInstant)
+-- LootManager:AwardItem(raidOrRoster, name, itemLink, itemId, extra, value, forceInstant)
 local function ExternalAwardEventHandler(_, data)
     if not Integration:GetGargulIntegration() then return end
     if not validateEventStructure(data, "Gargul") then
@@ -417,8 +420,10 @@ local function ExternalAwardEventHandler(_, data)
         return
     end
     local player, itemLink, itemId, isOs, isWishlisted, isPrioritized, isReserved = parseEventStructure(data)
+    local _, extra = UTILS.GetItemIdFromLink(itemLink)
     local action = Integration:GetGargulAwardAction(getGargulAwardActionName(isOs, isWishlisted, isPrioritized, isReserved))
     if action == PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION.NONE then return end
+    player = UTILS.Disambiguate(player)
     local profile = CLM.MODULES.ProfileManager:GetProfileByName(player)
     if not profile then
         LOG:Debug("Gargul item awarded to player without profile")
@@ -429,8 +434,18 @@ local function ExternalAwardEventHandler(_, data)
         LOG:Debug("Gargul item awarded outside of raid")
         return
     end
-    local value = getAwardValueFromAction(raid:Roster(), itemId, action)
-    CLM.MODULES.LootManager:AwardItem(raid, player, itemLink, itemId, value)
+    if action == PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION.DISENCHANT then
+        CLM.MODULES.LootManager:DisenchantItem(raid, itemLink, true)
+        return
+    end
+    local roster = raid:Roster()
+    local value = UTILS.round(
+        (getAwardValueFromAction(roster, itemId, action)
+            * roster:GetClassItemMultiplierValue(profile:ClassInternal(), itemId))
+        + (roster:GetConfiguration("tax") or 0),
+        roster:GetConfiguration("roundDecimals"))
+
+    CLM.MODULES.LootManager:AwardItem(raid, player, itemLink, itemId, extra, value)
 end
 
 local function RCLCAwardMessageHandler(eventName, _, winner, _, link, response)
@@ -443,8 +458,8 @@ local function RCLCAwardMessageHandler(eventName, _, winner, _, link, response)
         return
     end
 
-    local itemId = UTILS.GetItemIdFromLink(link)
-    if not GetItemInfoInstant(itemId) then
+    local itemId, extra = UTILS.GetItemIdFromLink(link)
+    if not UTILS.GetItemInfoInstant(itemId) then
         LOG:Debug("RCLCAwardMessageHandler() Unknown Item ID for %s", link)
         return
     end
@@ -454,7 +469,7 @@ local function RCLCAwardMessageHandler(eventName, _, winner, _, link, response)
         return
     end
 
-    winner = UTILS.RemoveServer(winner)
+    winner = UTILS.Disambiguate(winner)
     local profile = CLM.MODULES.ProfileManager:GetProfileByName(winner)
     if not profile then
         LOG:Debug("RCLCAwardMessageHandler() item awarded to player without profile")
@@ -466,13 +481,25 @@ local function RCLCAwardMessageHandler(eventName, _, winner, _, link, response)
         LOG:Debug("RCLCAwardMessageHandler() item awarded outside of raid")
         return
     end
-    local value = getAwardValueFromAction(raid:Roster(), itemId, action)
-    CLM.MODULES.LootManager:AwardItem(raid, winner, link, itemId, value)
+
+    if action == PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION.DISENCHANT then
+        CLM.MODULES.LootManager:DisenchantItem(raid, link, true)
+        return
+    end
+
+    local roster = raid:Roster()
+    local value = UTILS.round(
+        (getAwardValueFromAction(roster, itemId, action)
+            * roster:GetClassItemMultiplierValue(profile:ClassInternal(), itemId))
+        + (roster:GetConfiguration("tax") or 0),
+        roster:GetConfiguration("roundDecimals"))
+
+    CLM.MODULES.LootManager:AwardItem(raid, winner, link, itemId, extra, value)
 end
 
 local function RCLC_PR(rowFrame, frame, data, cols, row, realrow, column, fShow, table, ...)
     local value = 0
-    local profile = CLM.MODULES.ProfileManager:GetProfileByName(UTILS.RemoveServer(data[realrow].name or ""))
+    local profile = CLM.MODULES.ProfileManager:GetProfileByName(UTILS.Disambiguate(data[realrow].name or ""))
     if profile then
         local raid = CLM.MODULES.RaidManager:GetRaid()
         if raid then
@@ -637,16 +664,19 @@ PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTIONS_ORDERED = {
     PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION.AWARD_FOR_MEDIUM,
     PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION.AWARD_FOR_LARGE,
     PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION.AWARD_FOR_MAX,
+    PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION.DISENCHANT
+
 }
 
 PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTIONS_GUI = {
-    [PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION.NONE]             = CLM.L["None"],
-    [PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION.AWARD_FOR_FREE]   = CLM.L["Award for Free"],
-    [PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION.AWARD_FOR_BASE]   = CLM.L["Award for Base"],
-    [PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION.AWARD_FOR_SMALL]  = CLM.L["Award for Small"],
-    [PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION.AWARD_FOR_MEDIUM] = CLM.L["Award for Medium"],
-    [PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION.AWARD_FOR_LARGE]  = CLM.L["Award for Large"],
-    [PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION.AWARD_FOR_MAX]    = CLM.L["Award for Max"],
+    [PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION.NONE]                = CLM.L["None"],
+    [PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION.AWARD_FOR_FREE]      = CLM.L["Award for Free"],
+    [PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION.AWARD_FOR_BASE]      = CLM.L["Award for Base"],
+    [PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION.AWARD_FOR_SMALL]     = CLM.L["Award for Small"],
+    [PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION.AWARD_FOR_MEDIUM]    = CLM.L["Award for Medium"],
+    [PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION.AWARD_FOR_LARGE]     = CLM.L["Award for Large"],
+    [PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION.AWARD_FOR_MAX]       = CLM.L["Award for Max"],
+    [PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION.DISENCHANT]          = CLM.L["Disenchant"]
 }
 
 PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION_HANDLER = {
@@ -661,3 +691,4 @@ PRIV.CONSTANTS.EXTERNAL_LOOT_AWARD_ACTION_HANDLERS = UTILS.Set(PRIV.CONSTANTS.EX
 PRIV.CONSTANTS.TIMEFRAME_SCALE_VALUES = UTILS.Set(PRIV.CONSTANTS.TIMEFRAME_SCALE_VALUE)
 
 PRIV.MODULES.Integration = Integration
+

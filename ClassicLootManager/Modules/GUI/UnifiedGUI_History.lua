@@ -103,7 +103,7 @@ local function GenerateUntrustedOptions(self)
     for _, GUID in ipairs(profiles) do
         local profile = CLM.MODULES.ProfileManager:GetProfileByGUID(GUID)
         if profile then
-            profileNameMap[profile:Name()] = profile:Name()
+            profileNameMap[profile:Name()] = profile:ShortName()
             profileList[#profileList + 1] = profile:Name()
         end
     end
@@ -158,14 +158,14 @@ local function horizontalOptionsFeeder()
 end
 
 local function buildLootTooltip(tooltip, loot, itemLink, detailsMode)
-    local itemId = UTILS.GetItemIdFromLink(itemLink)
-    local itemString = "item:" .. tonumber(itemId)
-    tooltip:SetHyperlink(itemString)
+    -- local itemId = UTILS.GetItemIdFromLink(itemLink)
+    -- local itemString = "item:" .. tostring(itemId)
+    tooltip:SetHyperlink(itemLink)
     if loot then
         local profile = CLM.MODULES.ProfileManager:GetProfileByGUID(UTILS.getGuidFromInteger(loot:Creator()))
         local name
         if profile then
-            name = UTILS.ColorCodeText(profile:Name(), UTILS.GetClassColor(profile:Class()).hex)
+            name = UTILS.ColorCodeText(profile:ShortName(), UTILS.GetClassColor(profile:Class()).hex)
         else
             name = CLM.L["Unknown"]
         end
@@ -206,7 +206,7 @@ local function buildLootTooltip(tooltip, loot, itemLink, detailsMode)
                     else
                         upgradeTooltip:SetOwner(tooltip, "ANCHOR_RIGHT")
                     end
-                    upgradeTooltip:SetHyperlink("item:" .. tonumber(it))
+                    upgradeTooltip:SetHyperlink("item:" .. tostring(it))
                     upgradeTooltip:Show()
                     previousUpgradeTooltip = upgradeTooltip
                 end
@@ -235,7 +235,7 @@ local function buildPointTooltip(tooltip, history)
     local profile = CLM.MODULES.ProfileManager:GetProfileByGUID(UTILS.getGuidFromInteger(history:Creator()))
     local name
     if profile then
-        name = UTILS.ColorCodeText(profile:Name(), UTILS.GetClassColor(profile:Class()).hex)
+        name = UTILS.ColorCodeText(profile:ShortName(), UTILS.GetClassColor(profile:Class()).hex)
     else
         name = CLM.L["Unknown"]
     end
@@ -251,7 +251,7 @@ local tableStructure = {
                 local itemData = data[realrow].cols[column].value
                 local isLoot = ST_GetIsLoot(data[realrow])
                 if isLoot and itemData then
-                    local _, _, _, _, icon = GetItemInfoInstant(itemData)
+                    local _, _, _, _, icon = UTILS.GetItemInfoInstant(itemData)
                     frame:SetNormalTexture(icon)
                 else
                     frame:SetNormalTexture("Interface\\Icons\\INV_Misc_Head_Dragon_Bronze")
@@ -270,7 +270,7 @@ local tableStructure = {
         },
         {name = CLM.L["Date"],  width = 205, sort = LibStub("ScrollingTable").SORT_DSC},
         {name = CLM.L["Player"],width = 95,
-            comparesort = UTILS.LibStCompareSortWrapper(UTILS.LibStModifierFn)
+            comparesort = UTILS.LibStCompareSortWrapper(UTILS.LibStModifierFn), DoCellUpdate = UTILS.LibStNameCellUpdate
         }
     },
     -- Function to filter ScrollingTable
@@ -329,13 +329,13 @@ local tableStructure = {
 }
 
 local function fillLootList(displayedLoot, loot)
-    if GetItemInfoInstant(loot:Id()) then
-        local _, itemLink = GetItemInfo(loot:Id())
+    if UTILS.GetItemInfoInstant(loot:Id()) then
+        local _, itemLink = UTILS.GetItemInfo(loot:String())
         if not itemLink then
             UnifiedGUI_History.pendingLoot = true
         elseif not UnifiedGUI_History.pendingLoot then -- dont populate if we will be skipping it anyway - not displaying partially atm
             local owner = loot:Owner()
-            displayedLoot[#displayedLoot+1] = {loot, itemLink, owner:Name(), UTILS.GetClassColor(owner:Class())}
+            displayedLoot[#displayedLoot+1] = {loot, UTILS.SpoofLink(itemLink, loot:Extra()), owner:Name(), UTILS.GetClassColor(owner:Class())}
         end
     end
 end
@@ -432,20 +432,8 @@ local function tableDataFeeder()
             if reason == CONSTANTS.POINT_CHANGE_REASON.DECAY then
                 value = value .. "%"
             end
-
-            local suffix = ""
-            if isEPGP then
-                if history:Spent() then
-                    suffix = CLM.L["GP"]
-                -- else
-                    -- suffix = CLM.L["EP"]
-                end
-            -- else
-                -- suffix = CLM.L["DKP"]
-            end
-
+            local suffix = UTILS.DecodePointTypeChangeName(roster:GetPointType(), history:Type())
             value = value .. " " .. suffix
-
             local color
             local profiles = history:Profiles()
             if #profiles == 1 then
@@ -461,7 +449,7 @@ local function tableDataFeeder()
                 {value = ""},
                 {value = CONSTANTS.POINT_CHANGE_REASONS.ALL[reason] or ""},
                 {value = value,
-                    color = ((isEPGP and history:Spent()) and colorTurquoise)
+                    color = ((isEPGP and (history:Type() == CONSTANTS.POINT_CHANGE_TYPE.SPENT)) and colorTurquoise)
                 },
                 {value = date(CLM.L["%Y/%m/%d %H:%M:%S (%A)"], history:Timestamp())},
                 {value = player, color = color},
@@ -549,5 +537,6 @@ CLM.GUI.Unified:RegisterTab(
         store = storeHandler,
         restore = restoreHandler,
         dataReady = dataReadyHandler
-    }
+    },
+    "Interface\\BUTTONS\\UI-GuildButton-PublicNote-Up.blp"
 )

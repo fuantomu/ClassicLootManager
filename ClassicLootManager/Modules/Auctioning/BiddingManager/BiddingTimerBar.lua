@@ -8,7 +8,7 @@ local UTILS     = CLM.UTILS
 
 local LibCandyBar = LibStub("LibCandyBar-3.0")
 
-local _, _, _, isElvUI = GetAddOnInfo("ElvUI")
+local _, _, _, isElvUI = UTILS.GetAddOnInfo("ElvUI")
 
 local BiddingTimerBar = {} -- BiddingTimerBar
 BiddingTimerBar.__index = BiddingTimerBar
@@ -52,7 +52,7 @@ local function Create(self, item, auction, options)
         RecolorBar(self)
     end)
 
-    self.parent = CreateFrame("Frame")
+    self.parent = CreateFrame("Frame", nil, UIParent)
     -- local tint = self.parent:CreateTexture(nil, "BACKGROUND")
     -- tint:SetAllPoints()
     -- tint:SetColorTexture(math.random(0.5,1), math.random(0.5,1), math.random(0.5,1), 0.7)
@@ -120,7 +120,7 @@ function BiddingTimerBar:UpdateInfo(item)
     local link = item:GetItemLink() or ""
     self.bar:SetLabel(link .. " " .. note)
 
-    local _, _, _, _, icon = GetItemInfoInstant(link)
+    local _, _, _, _, icon = UTILS.GetItemInfoInstant(link)
     self.bar:SetIcon(icon)
 end
 

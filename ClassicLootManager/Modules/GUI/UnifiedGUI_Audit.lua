@@ -38,7 +38,7 @@ local function boolToString(value)
 end
 
 local function safeItemIdToLink(itemId)
-    local _, itemLink = GetItemInfo(itemId)
+    local _, itemLink = UTILS.GetItemInfo(itemId)
     return itemLink or safeToString(itemId)
 end
 
@@ -55,7 +55,7 @@ local configDecodeFunctions = {
         return CLM.L["Auction Type"], CONSTANTS.AUCTION_TYPES_GUI[value] or ""
     end),
     itemValueMode = (function(value)
-        return CLM.L["Item Value Mode"], CONSTANTS.ITEM_VALUE_MODES_GUI[value] or ""
+        return CLM.L["Item value mode"], CONSTANTS.ITEM_VALUE_MODES_GUI[value] or ""
     end),
     zeroSumBank = (function(value)
         return CLM.L["Zero-Sum Bank"], boolToString(value)
@@ -535,7 +535,7 @@ local function concatenateNameFromList(list)
     for _,iGUID in ipairs(list) do
         local profile = CLM.MODULES.ProfileManager:GetProfileByGUID(UTILS.getGuidFromInteger(iGUID))
         if profile then
-            names = names .. profile:Name() .. ","
+            names = names .. profile:Name() .. ", "
         end
     end
     return names
@@ -590,7 +590,7 @@ local function getEntryInfo(entry)
     local name = nameEntry(entry)
     local time = date(CLM.L["%d/%m/%Y %H:%M:%S"], entry:time())
     local type = entry:class()
-    local guid = UTILS.getGuidFromInteger(entry:creator())
+    local guid = UTILS.getGuidFromInteger(entry:creatorFull())
     local profile = CLM.MODULES.ProfileManager:GetProfileByGUID(guid)
     local author = profile and profile:Name() or guid
     local description = describeEntry(entry)
@@ -638,12 +638,62 @@ local function GenerateUntrustedOptions(self)
     return self.filter:GetAceOptions()
 end
 
+local function GenerateOfficerOptions(self)
+    return {
+        toggle_sandbox = {
+            name = CLM.L["Enter sandbox"],
+            desc = CLM.L["In sandbox mode all communication is disabled and changes are local until applied. Click Apply changes to store changes and exit sandbox mode. Click Discard to undo changes and exit sandbox mode. /reload will discard changes. Entering sandbox mode will cancel time travel."],
+            type = "execute",
+            func = (function() CLM.MODULES.SandboxManager:EnterSandbox() end),
+            order = 11,
+            width = 0.75,
+            hidden  = (function() return CLM.MODULES.SandboxManager:IsSandbox() end)
+        },
+        apply_changes = {
+            name = CLM.L["Apply changes"],
+            desc = CLM.L["Applies all changes and exits sandbox mode"],
+            type = "execute",
+            func = (function() CLM.MODULES.SandboxManager:ApplyChanges() end),
+            order = 12,
+            width = 0.75,
+            confirm = true,
+            hidden  = (function() return not CLM.MODULES.SandboxManager:IsSandbox() end)
+        },
+        discard_changes = {
+            name = CLM.L["Discard changes"],
+            desc = CLM.L["Discards all changes and exits sandbox mode"],
+            type = "execute",
+            func = (function() CLM.MODULES.SandboxManager:DiscardChanges() end),
+            order = 13,
+            confirm = true,
+            width = 0.75,
+            hidden  = (function() return not CLM.MODULES.SandboxManager:IsSandbox() end)
+        },
+        sandbox_info = {
+            name = (function()
+                local info = ""
+                if CLM.MODULES.SandboxManager:IsSandbox() then
+                    info = UTILS.ColorCodeText(CLM.L["Sandbox"], "ff8000")
+                elseif CLM.MODULES.LedgerManager:IsTimeTraveling() then
+                    info = UTILS.ColorCodeText(CLM.L["Time Traveling"], "eeee00")
+                end
+                return info
+            end),
+            fontSize = "medium",
+            width = 0.75,
+            order = 14,
+            type = "description"
+        },
+    }
+end
+
 local function horizontalOptionsFeeder()
     local options = {
         type = "group",
         args = { }
     }
     UTILS.mergeDictsInline(options.args, GenerateUntrustedOptions(UnifiedGUI_Audit))
+    UTILS.mergeDictsInline(options.args, GenerateOfficerOptions(UnifiedGUI_Audit))
     return options
 end
 
@@ -672,8 +722,8 @@ local tableStructure = {
             if not tooltip then return end
             tooltip:SetOwner(rowFrame, "ANCHOR_RIGHT")
             tooltip:AddLine(ST_GetName(rowData))
-            tooltip:AddLine(ST_GetDescription(rowData))
-            tooltip:AddLine(strsub(ST_GetExtendedDescription(rowData), 1, 100))
+            tooltip:AddLine(ST_GetDescription(rowData), nil, nil, nil, true)
+            tooltip:AddLine(ST_GetExtendedDescription(rowData), nil, nil, nil, true)
             tooltip:Show()
             return status
         end),
@@ -780,5 +830,6 @@ CLM.GUI.Unified:RegisterTab(
         -- store = storeHandler,
         -- restore = restoreHandler,
         -- dataReady = dataReadyHandler
-    }
+    },
+    "Interface\\BUTTONS\\UI-OptionsButton.blp"
 )

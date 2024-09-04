@@ -1,7 +1,7 @@
 -- ------------------------------- --
 local  _, CLM = ...
 -- ------ CLM common cache ------- --
--- local LOG       = CLM.LOG
+local LOG       = CLM.LOG
 -- local CONSTANTS = CLM.CONSTANTS
 local UTILS     = CLM.UTILS
 -- ------------------------------- --
@@ -14,23 +14,33 @@ AuctionItem.__index = AuctionItem
 local emptyItem = CreateFromMixins(ItemMixin)
 
 local scanTooltip = CreateFrame("GameTooltip", "CLMAuctionItemScanTooltip", UIParent, "GameTooltipTemplate")
+local scanItem
+
+local function usabilityScanner(tooltip)
+    if tooltip ~= scanTooltip then return end
+    if not scanItem then return end
+    local tooltipName = tooltip:GetName()
+    for i = 1, tooltip:NumLines() do
+        local l = _G[tooltipName..'TextLeft'..i]
+        local r = _G[tooltipName..'TextRight'..i]
+        if UTILS.IsTooltipTextRed(l) or UTILS.IsTooltipTextRed(r) then
+            scanItem.canUse = false
+            break
+        end
+    end
+    tooltip:Hide()
+    scanItem = nil
+end
+
+if CLM.WoW10 then
+    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, usabilityScanner)
+else
+    scanTooltip:SetScript('OnTooltipSetItem', usabilityScanner)
+end
 
 local function CheckUsability(self)
-    scanTooltip:SetScript('OnTooltipSetItem', (function(s)
-        local tooltipName = s:GetName()
-        for i = 1, s:NumLines() do
-            local l = _G[tooltipName..'TextLeft'..i]
-            local r = _G[tooltipName..'TextRight'..i]
-            if UTILS.IsTooltipTextRed(l) or UTILS.IsTooltipTextRed(r) then
-                self.canUse = false
-                break
-            end
-        end
-        s:Hide()
-        s:SetScript('OnTooltipSetItem', (function() end))
-    end))
-
     if not self.item:IsItemEmpty() then
+        scanItem = self
         scanTooltip:SetHyperlink(self.item:GetItemLink())
     end
 end
@@ -42,6 +52,7 @@ function AuctionItem:New(item)
     o.item = item or emptyItem
     o.canUse = true
     o.values = {}
+    o.total = 1
     o:Clear()
 
     CheckUsability(o)
@@ -138,18 +149,13 @@ function AuctionItem:Clear()
     self.userResponses = {}
     self.userRolls = {}
     self.rollValues = {}
-    self.awardEntryId = nil
     self.bid = nil
     -- self.canUse = true
     self.highestBid = -math.huge
 end
 
-function AuctionItem:SetAwardId(entryId)
-    self.awardEntryId = entryId
-end
-
 function AuctionItem:LoadValues(roster)
-    self.values = UTILS.ShallowCopy(roster:GetItemValues(self.item:GetItemID()))
+    self.values = UTILS.ShallowCopy(roster:GetItemValuesFromItemLink(self.item:GetItemLink()))
 end
 
 function AuctionItem:SetValues(values)
@@ -160,6 +166,23 @@ function AuctionItem:SetValues(values)
             self.values[key] = value
         end
     end
+end
+
+function AuctionItem:SpoofLinkPayload(extra)
+    if not (CLM.WoW10 or CLM.WoWCata) then return end
+    if type(extra) ~= 'string' then return end
+    local link = self.item:GetItemLink()
+    if type(link) ~= 'string' then
+        LOG:Warning("ItemLink for %s not found while updating payload.", self.item:GetItemID())
+        return
+    end
+    self.item.itemLink = UTILS.SpoofLink(link, extra)
+    LOG:Debug("Spoofed %s into %s", link, self.item.itemLink)
+end
+
+function AuctionItem:SetTotal(total)
+    total = tonumber(total) or 1
+    self.total = total
 end
 
 function AuctionItem:GetValues()
@@ -180,6 +203,13 @@ end
 
 function AuctionItem:GetItemLink()
     return self.item:GetItemLink()
+end
+
+function AuctionItem:GetExtraPayload()
+    if not self.extraPayload then
+        _, self.extraPayload = UTILS.GetItemIdFromLink(self.item:GetItemLink())
+    end
+    return self.extraPayload
 end
 
 function AuctionItem:GetCanUse()
@@ -215,6 +245,21 @@ end
 
 function AuctionItem:BidDenied()
     return (self.bidStatus == false)
+end
+
+function AuctionItem:IncrementTotal()
+    self.total = self.total + 1
+end
+
+function AuctionItem:DecrementTotal()
+    self.total = self.total - 1
+    if self.total < 0 then
+        self.total = 0
+    end
+end
+
+function AuctionItem:GetTotal()
+    return self.total
 end
 
 CLM.MODELS.AuctionItem = AuctionItem

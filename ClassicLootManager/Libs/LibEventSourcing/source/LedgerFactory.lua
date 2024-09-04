@@ -1,6 +1,6 @@
 local _, LibEventSourcing = ...
 
-local LedgerFactory, _ = LibStub:NewLibrary("EventSourcing/LedgerFactory", 2)
+local LedgerFactory, _ = LibStub:NewLibrary("EventSourcing/LedgerFactory", 3)
 if not LedgerFactory then
     return
 end
@@ -71,22 +71,25 @@ LedgerFactory.createLedger = function(table, send, registerReceiveHandler, autho
         registerMutator = function(metatable, mutatorFunc)
             stateManager:registerHandler(metatable, mutatorFunc)
         end,
-        submitEntry = function(entry)
+        submitEntry = function(entry, creator)
             -- not applying timetravel before auth, because from an addon perspective it is the current time.
             -- check authorization
-            if not authorizationHandler(entry, UnitName("player")) then
+            if not authorizationHandler(entry, creator or UnitName("player")) then
                 error("Attempted to submit entries for which you are not authorized")
                 return
             end
 
             stateManager:addEvent(entry)
             listSync:transmitViaGuild(entry)
+            listSync:transmitViaWhisperToAllTargets(entry)
         end,
         ignoreEntry = function(entry)
             local ignoreEntry = stateManager:createIgnoreEntry(entry)
             if listSync:transmitViaGuild(ignoreEntry, entry) then
                 -- only commit locally if we are authorized to send
                 sortedList:uniqueInsert(ignoreEntry)
+                -- Send to all whisper targets afterwards
+                listSync:transmitViaWhisperToAllTargets(ignoreEntry)
             else
                 error("Attempted to submit entries for which you are not authorized")
             end
@@ -133,8 +136,5 @@ LedgerFactory.createLedger = function(table, send, registerReceiveHandler, autho
         requestPeerStatusFromGuild = function()
             listSync:requestPeerStatusFromGuild()
         end
-
-
-
     }
 end

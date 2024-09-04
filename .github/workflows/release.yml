@@ -3,6 +3,7 @@ on:
   push:
     tags:
       - 'v*'
+
 jobs:
   create_github_release:
     name: Create a release object in Github
@@ -16,22 +17,23 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  bigwigs_release_wrath:
+  packager_release:
     needs:
       - create_github_release
-    name: Build via BigWigs packager for Wrath Classic
+    name: Package and Upload
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
 #      - name: verify required files recursively
 #        run: scripts/verify-dependencies.sh ClassicLootManager.toc
       - name: Bigwigs packager
-        uses: BigWigsMods/packager@7cd7fe5fede4ca80f63742e6bc1d777914814380
+        uses: BigWigsMods/packager@master
         env:
           CF_API_KEY: ${{ secrets.CF_TOKEN }}
           WAGO_API_TOKEN: ${{ secrets.WAGO_TOKEN }}
+          # GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
         with:
-          args: "-o -u -m .pkgmeta -g wrath"
+          args: "-o -u -m .pkgmeta"
       - name: Get name of zip file
         run: echo "artifact=`readlink -f .release/*.zip`" >> $GITHUB_ENV
       - name: Upload artifact to github
@@ -42,7 +44,7 @@ jobs:
 
   discord_announce:
     needs:
-      - bigwigs_release_wrath
+      - packager_release
     name: Post a Discord Announcement
     runs-on: ubuntu-latest
     steps:

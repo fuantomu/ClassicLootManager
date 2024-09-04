@@ -66,6 +66,8 @@ function AuctionInfo:New(object)
     o.raid = object.raid
 
     o.items = {}
+    o.itemUIDMap = {}
+    o.nextItemUID = 1
     o.itemCount = 0
 
     o.auctionTime = object.auctionTime or 0
@@ -96,12 +98,25 @@ local function _GetIncrement(s)
     return s.increment
 end
 
+local function UpdateAuctionTime(self)
+    if self.configuration then
+        local auctionTime = self.configuration:Get("auctionTime")
+        local multiplier = 1
+        if self.configuration:Get("multiplyTime") then
+            multiplier = self.itemCount
+        end
+        self.auctionTime = auctionTime * multiplier
+    end
+end
+
 function AuctionInfo:NewShim(auctionType, mode, useOS, namedButtons, increment, fieldNames)
     local o = {}
     setmetatable(o, self)
 
     o.state = CONSTANTS.AUCTION_INFO.STATE.IDLE
     o.items = {}
+    o.itemUIDMap = {}
+    o.nextItemUID = 1
     o.itemCount = 0
 
     o.auctionTime = 0
@@ -114,6 +129,7 @@ function AuctionInfo:NewShim(auctionType, mode, useOS, namedButtons, increment, 
     o.UpdateRoster = nil
     o.GetAlwaysAllowBaseBids = nil
     o.GetAlwaysAllowAllInBids = nil
+    o.GetAlwaysAllowAll0 = nil
     o.GetAllowEqualBids = nil
     o.GetAllowCancelPass = nil
     o.GetTax = nil
@@ -156,11 +172,13 @@ function AuctionInfo:CopySettings(object)
             item:LoadValues(self.roster)
         end
     end
+
+    UpdateAuctionTime(self)
 end
 
 local function UpdateConfigurableData(self)
-    self.auctionTime = self.roster:GetConfiguration("auctionTime")
-    self.antiSnipe = self.roster:GetConfiguration("antiSnipe")
+    UpdateAuctionTime(self)
+    self.antiSnipe = self.configuration:Get("antiSnipe")
 end
 
 local function UpdateConfigurationInternal(self)
@@ -215,59 +233,100 @@ function AuctionInfo:UpdateRaid(raid)
     self.state = CONSTANTS.AUCTION_INFO.STATE.IDLE
 end
 
-local function AddAuctionItemToList(self, auctionItem)
-    self.items[auctionItem:GetItemID()] = auctionItem
-    self.itemCount = self.itemCount + 1
+local function GetItemInAuctionByLink(self, auctionItem)
+    return self.items[self:GetAuctionItemUID(auctionItem)]
 end
 
-local function AddItemInternal(self, item)
-    if self.items[item:GetItemID()] then
-        LOG:Message("%s already in auction list.", item:GetItemLink())
-        return
+local function AddAuctionItemToList(self, auctionItem, uid)
+    if self.passiveMode then
+        if type(uid) == "number" then
+            self.nextItemUID = uid
+        else
+            LOG:Fatal("Invalid UID provided %s", string(uid))
+        end
+    else
+        if uid then LOG:Warning("Ignoring Auction Item UID in active mode") end
     end
-    local auctionItem = AuctionItem:New(item)
-    AddAuctionItemToList(self, auctionItem)
+
+    self.items[self.nextItemUID] = auctionItem
+    self.nextItemUID = self.nextItemUID + 1
+    self.itemCount = self.itemCount + 1
+    self.hasUsableItems = nil
+    UpdateAuctionTime(self)
+end
+
+local function AddItemInternal(self, item, uid)
+    local auctionItem = GetItemInAuctionByLink(self, item)
+    if auctionItem then
+        LOG:Message("%s already in auction list. Increasing the amount to award", item:GetItemLink())
+        auctionItem:IncrementTotal()
+        return auctionItem
+    end
+    auctionItem = AuctionItem:New(item)
+    AddAuctionItemToList(self, auctionItem, uid)
     return auctionItem
 end
 
-function AuctionInfo:AddExistingAuctionItem(auctionItem)
+function AuctionInfo:AddExistingAuctionItem(auctionItem, uid)
     assertCantAddItems(self)
-    if self.items[auctionItem:GetItemID()] then
+    if GetItemInAuctionByLink(self, auctionItem) then
         LOG:Message("%s already in auction list.", auctionItem:GetItemLink())
         return
     end
-    AddAuctionItemToList(self, auctionItem)
+    AddAuctionItemToList(self, auctionItem, uid)
     return auctionItem
 end
 
-function AuctionInfo:AddItem(item)
+function AuctionInfo:AddItem(item, uid)
     assertCantAddItems(self)
-    local auctionItem = AddItemInternal(self, item)
+    local auctionItem = AddItemInternal(self, item, uid)
     if auctionItem and self.roster then
         auctionItem:LoadValues(self.roster)
     end
     return auctionItem
 end
 
-function AuctionInfo:RemoveItem(id)
+function AuctionInfo:RemoveItem(item)
     assertNotInProgress(self)
-    if self.items[id] then
-        self.items[id] = nil
+    local UID = self:GetAuctionItemUID(item)
+    if self.items[UID] then
+        self.items[UID] = nil
         self.itemCount = self.itemCount - 1
+        UpdateAuctionTime(self)
     end
 end
 
-function AuctionInfo:GetItem(id)
-    return self.items[id]
+function AuctionInfo:IsItemInAuction(auctionItem)
+    return self:GetAuctionItemUID(auctionItem) ~= nil
+end
+
+function AuctionInfo:FindItemByLink(itemLink)
+    if not self.itemUIDMap[itemLink] then
+        for uid, item in pairs(self.items) do
+            if item:GetItemLink() == itemLink then
+                self.itemUIDMap[itemLink] = uid
+                break
+            end
+        end
+    end
+    return self.itemUIDMap[itemLink]
+end
+
+function AuctionInfo:GetAuctionItemUID(auctionItem)
+    return self:FindItemByLink(auctionItem:GetItemLink())
+end
+
+function AuctionInfo:GetItemByUID(uid)
+    return self.items[uid]
 end
 
 function AuctionInfo:GetItems()
     return self.items
 end
 
-function AuctionInfo:SetResponse(id, username, response)
+function AuctionInfo:SetResponse(uid, username, response)
     assertInProgress(self)
-    local auctionItem = self.items[id]
+    local auctionItem = self.items[uid]
     if not auctionItem then
         LOG:Warning("Received response to non existent item.")
         return
@@ -424,6 +483,10 @@ function AuctionInfo:GetAlwaysAllowAllInBids()
     return self.configuration:Get("allInAlways")
 end
 
+function AuctionInfo:GetAlwaysAllow0()
+    return self.configuration:Get("always0")
+end
+
 function AuctionInfo:GetAllowEqualBids()
     return self.configuration:Get("allowEqualMax")
 end
@@ -476,12 +539,25 @@ function AuctionInfo:GetRaid()
     return self.raid
 end
 
-function AuctionInfo:HasBids(itemId, username)
-    local item = self.items[itemId]
+function AuctionInfo:HasBids(uid, username)
+    local item = self.items[uid]
     if item then
         return (item:GetResponse(username) ~= nil)
     end
     return false
+end
+
+function AuctionInfo:HasUsableItems()
+    if self.hasUsableItems == nil then
+        self.hasUsableItems = false
+        for _, item in pairs(self.items) do
+            if item:GetCanUse() then
+                self.hasUsableItems = true
+                break
+            end
+        end
+    end
+    return self.hasUsableItems
 end
 
 function AuctionInfo:GetAnonymousName(name)

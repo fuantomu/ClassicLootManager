@@ -32,14 +32,20 @@ function GlobalConfigs:Initialize()
             loot = true,
             commands = false
         },
-        disenchanters = ""
+        disenchanters = "",
+        loot_roll = {
+            rollOnLoot = CONSTANTS.LOOT_ROLL_TYPE_IGNORE,
+            includeLegendary = false,
+            includeStacking = false,
+            includePatterns = false
+        }
     })
 
     local options = {
         clm_logo = {
             name = "",
             type = "description",
-            image = "Interface\\AddOns\\ClassicLootManager\\Media\\Icons\\clm-dark-128.tga",
+            image = "Interface\\AddOns\\ClassicLootManager\\Media\\Icons\\clm-dark-64.png",
             width = 0.25,
             order = 0
         },
@@ -61,8 +67,7 @@ function GlobalConfigs:Initialize()
         patron_kudos = {
             type = "description",
             name = [=[
-Thank you patrons, especially:
-|cffff8000Allcoast|r, |cffff8000BigSpoon|r, |cffff8000Sahkage|r, |cffff8000naimious|r
+Thank you patrons!
 ]=],
             fontSize = "medium",
             descStyle = "inline",
@@ -158,6 +163,16 @@ Thank you patrons, especially:
             func = function() CLM.MODULES.LedgerManager:Wipe() end,
             order = 4
         },
+        nofunallowed = {
+            type = "execute",
+            name = "No fun allowed",
+            desc = "Disable April fools jokes",
+            func = (function()
+                StaticPopup_Show("CLMNoFunAllowedReload")
+            end),
+            order = 4.5,
+            hidden = (function() return not CLM.AF end)
+        },
         global_loot_announcement_header = {
             type = "header",
             name = CLM.L["Announce loot"],
@@ -198,7 +213,7 @@ Thank you patrons, especially:
         de_list = {
             type = "input",
             -- name = "",
-            name = CLM.L["Comma-separated (CSV) list of disenchanter names. Case insensitive."],
+            name = CLM.L["Comma-separated (CSV) list of disenchanter names. Case insensitive. Player-RealmName."],
             get = (function(i) return self:GetDisenchanterCSV() end),
             set = (function(i,v) self:SetDisenchanterCSV(v) end),
             width = "full",
@@ -258,11 +273,6 @@ Thank you patrons, especially:
             get = function(i) return self:GetBidsWarning() end,
             order = 126
         },
-        danger_zone_header = {
-            type = "header",
-            name = CLM.L["Danger Zone - Use at own risk"],
-            order = 10000
-        },
         tooltip_display_header = {
             type = "header",
             name = CLM.L["Price Tooltips"] .. " - " .. CLM.L["Not in raid"],
@@ -276,6 +286,55 @@ Thank you patrons, especially:
             get = function(i) return self:GetPriceTooltip() end,
             order = 901
         },
+        loot_roll_header = {
+            type = "header",
+            name = CLM.L["Loot Rolling"],
+            order = 1200
+        },
+        loot_roll_behavior = {
+            name = CLM.L["Roll on Loot"],
+            desc = CLM.L["Select default behavior whenever group loot rolling window gets opened. This will be active only during CLM Raid and while in Raid instance."],
+            type = "select",
+            values = CONSTANTS.ROLL_TYPE,
+            set = function(i, v) self:SetRollType(v) end,
+            get = function(i) return self:GetRollType() end,
+            order = 1201
+        },
+        loot_roll_padding = {
+            name = "",
+            type = "description",
+            order = 1202,
+            width = 2
+        },
+        loot_roll_include_legendary = {
+            name = CLM.L["Include"] .. " " .. UTILS.ColorCodeText(CLM.L["Legendary"], "ff8000"),
+            desc = CLM.L["Toggles auto-rolling on legendary items."],
+            type = "toggle",
+            set = function(i, v) self:SetLootRollIncludeLegendary(v) end,
+            get = function(i) return self:GetLootRollIncludeLegendary() end,
+            order = 1203
+        },
+        loot_roll_include_stacking = {
+            name = CLM.L["Include"] .. " " .. CLM.L["Stacking"],
+            desc = CLM.L["Toggles auto-rolling on stacking items."],
+            type = "toggle",
+            set = function(i, v) self:SetLootRollIncludeStacking(v) end,
+            get = function(i) return self:GetLootRollIncludeStacking() end,
+            order = 1204
+        },
+        loot_roll_include_patterns = {
+            name = CLM.L["Include"] .. " " .. CLM.L["Patterns"],
+            desc = CLM.L["Toggles auto-rolling on patterns."],
+            type = "toggle",
+            set = function(i, v) self:SetLootRollIncludePatterns(v) end,
+            get = function(i) return self:GetLootRollIncludePatterns() end,
+            order = 1205
+        },
+        danger_zone_header = {
+            type = "header",
+            name = CLM.L["Danger Zone - Use at own risk"],
+            order = 10000
+        },
         danger_zone_disable_sync = {
             type = "toggle",
             name = CLM.L["Disable data synchronisation"],
@@ -287,6 +346,39 @@ Thank you patrons, especially:
         }
     }
     CLM.MODULES.ConfigManager:Register(CLM.CONSTANTS.CONFIGS.GROUP.GLOBAL, options)
+end
+
+function GlobalConfigs:SetRollType(value)
+    self.db.loot_roll.rollOnLoot = CONSTANTS.ROLL_TYPE[value] and value or CONSTANTS.LOOT_ROLL_TYPE_IGNORE
+end
+
+function GlobalConfigs:GetRollType()
+    return self.db.loot_roll.rollOnLoot
+end
+
+
+function GlobalConfigs:SetLootRollIncludeLegendary(value)
+    self.db.loot_roll.includeLegendary = value and true or false
+end
+
+function GlobalConfigs:GetLootRollIncludeLegendary()
+    return self.db.loot_roll.includeLegendary
+end
+
+function GlobalConfigs:SetLootRollIncludeStacking(value)
+    self.db.loot_roll.includeStacking = value and true or false
+end
+
+function GlobalConfigs:GetLootRollIncludeStacking()
+    return self.db.loot_roll.includeStacking
+end
+
+function GlobalConfigs:SetLootRollIncludePatterns(value)
+    self.db.loot_roll.includePatterns = value and true or false
+end
+
+function GlobalConfigs:GetLootRollIncludePatterns()
+    return self.db.loot_roll.includePatterns
 end
 
 function GlobalConfigs:SetSounds(value)

@@ -6,12 +6,12 @@ local CONSTANTS = CLM.CONSTANTS
 local UTILS     = CLM.UTILS
 -- ------------------------------- --
 
+local _, _, _, isElvUI = UTILS.GetAddOnInfo("ElvUI")
+
 local colorRed = {r = 0.93, g = 0.276, b = 0.27, a = 1.0}
 local colorRedTransparent = {r = 0.93, g = 0.276, b = 0.27, a = 0.3}
 local colorBlueTransparent = {r = 0.27, g = 0.276, b = 0.93, a = 0.3}
 local colorGreen = {r = 0.27, g = 0.93, b = 0.27, a = 1.0}
-
-local whoami = UTILS.whoami()
 
 local function ST_GetName(row)
     return row.cols[2].value
@@ -54,8 +54,8 @@ local function ST_GetProfilePoints(row)
     return row.cols[13].value
 end
 
-local function ST_GetIsEPGP(row)
-    return row.cols[14].value
+local function ST_GetPointType(row)
+    return row.cols[12].value
 end
 
 local function ST_GetEP(row)
@@ -97,6 +97,16 @@ local UnifiedGUI_Standings = {
     tooltip = CreateFrame("GameTooltip", "CLMUnifiedGUIStandingsDialogTooltip", UIParent, "GameTooltipTemplate"),
 }
 
+local function HandleRosterChange(rosterUid)
+    UnifiedGUI_Standings.roster = rosterUid
+    UnifiedGUI_Standings.awardType = CONSTANTS.POINT_CHANGE_TYPE.POINTS
+    UnifiedGUI_Standings.decayType = CONSTANTS.POINT_CHANGE_TYPE.POINTS
+    local roster = CLM.MODULES.RosterManager:GetRosterByUid(UnifiedGUI_Standings.roster)
+    if roster and roster:GetPointType() == CONSTANTS.POINT_TYPE.EPGP then
+        UnifiedGUI_Standings.decayType = CONSTANTS.POINT_CHANGE_TYPE.TOTAL
+    end
+end
+
 function UnifiedGUI_Standings:GetSelection()
     LOG:Trace("UnifiedGUI_Standings:GetSelection()")
     local st = CLM.GUI.Unified:GetScrollingTable()
@@ -129,9 +139,9 @@ local function GenerateUntrustedOptions(self)
         type = "select",
         values = CLM.MODULES.RosterManager:GetRostersUidMap(),
         set = function(i, v)
-            self.roster = v
+            -- self.roster = v
+            HandleRosterChange(v)
             self.context = CONSTANTS.ACTION_CONTEXT.ROSTER
-            self.awardGearPoints = false
             refreshFn()
         end,
         get = function(i) return self.roster end,
@@ -188,7 +198,7 @@ local function GenerateAssistantOptions(self)
             type = "input",
             set = function(i, v) self.awardValue = v end,
             get = function(i) return self.awardValue end,
-            width = 0.575,
+            width = 0.5,
             pattern = CONSTANTS.REGEXP_FLOAT,
             order = 13
         },
@@ -196,7 +206,7 @@ local function GenerateAssistantOptions(self)
             name = CLM.L["Award"],
             desc = CLM.L["Award points to players based on context."],
             type = "execute",
-            width = 0.575,
+            width = isElvUI and 0.5 or 0.575,
             func = (function(i)
                 -- Award Value
                 local awardValue = tonumber(self.awardValue)
@@ -212,13 +222,13 @@ local function GenerateAssistantOptions(self)
                 local roster = CLM.MODULES.RosterManager:GetRosterByUid(self.roster)
                 if self.context == CONSTANTS.ACTION_CONTEXT.RAID then
                     if CLM.MODULES.RaidManager:IsInRaid() then
-                        CLM.MODULES.PointManager:UpdateRaidPoints(CLM.MODULES.RaidManager:GetRaid(), awardValue, awardReason, CONSTANTS.POINT_MANAGER_ACTION.MODIFY, self.note, self.awardGearPoints)
+                        CLM.MODULES.PointManager:UpdateRaidPoints(CLM.MODULES.RaidManager:GetRaid(), awardValue, awardReason, CONSTANTS.POINT_MANAGER_ACTION.MODIFY, self.note, self.awardType)
                     else
                         LOG:Warning("You are not in raid.")
                     end
                 elseif self.context == CONSTANTS.ACTION_CONTEXT.ROSTER then
                     if roster then
-                        CLM.MODULES.PointManager:UpdateRosterPoints(roster, awardValue, awardReason, CONSTANTS.POINT_MANAGER_ACTION.MODIFY, false, self.note, self.awardGearPoints)
+                        CLM.MODULES.PointManager:UpdateRosterPoints(roster, awardValue, awardReason, CONSTANTS.POINT_MANAGER_ACTION.MODIFY, false, self.note, self.awardType)
                     else
                         LOG:Warning("Missing valid roster.")
                     end
@@ -230,7 +240,7 @@ local function GenerateAssistantOptions(self)
                         return
                     end
                     if roster then
-                        CLM.MODULES.PointManager:UpdatePoints(roster, profiles, awardValue, awardReason, CONSTANTS.POINT_MANAGER_ACTION.MODIFY, self.note, self.awardGearPoints)
+                        CLM.MODULES.PointManager:UpdatePoints(roster, profiles, awardValue, awardReason, CONSTANTS.POINT_MANAGER_ACTION.MODIFY, self.note, self.awardType)
                     else
                         LOG:Warning("Missing valid roster.")
                     end
@@ -239,23 +249,27 @@ local function GenerateAssistantOptions(self)
             confirm = (function()
                 local awardValue = tonumber(self.awardValue)
                 if not awardValue then return CLM.L["Missing award value"] end
+                local roster = CLM.MODULES.RosterManager:GetRosterByUid(self.roster)
+                local points = UTILS.DecodePointTypeChangeName(roster:GetPointType(), self.awardType, true)
                 if self.context == CONSTANTS.ACTION_CONTEXT.RAID then
-                    return string.format(CLM.L["Award %s points to everyone in raid."], awardValue)
+                    return string.format(CLM.L["Award %s %s to everyone in raid."], awardValue, points)
                 elseif self.context == CONSTANTS.ACTION_CONTEXT.ROSTER then
-                    return string.format(CLM.L["Award %s points to everyone in roster."], awardValue)
+                    return string.format(CLM.L["Award %s %s to everyone in roster."], awardValue, points)
                 elseif self.context == CONSTANTS.ACTION_CONTEXT.SELECTED then
                     local profiles = UnifiedGUI_Standings:GetSelection()
                     if not profiles then profiles = {} end
-                    return string.format(CLM.L["Award %s points to %s selected players."], awardValue, #profiles)
+                    return string.format(CLM.L["Award %s %s to %s selected players."], awardValue, points, #profiles)
                 end
             end),
             order = 14
         },
-        award_type = {
-            name = CLM.L["Gear Points"],
-            type = "toggle",
-            set = function(i, v) self.awardGearPoints = v and true or false end,
-            get = function(i) return self.awardGearPoints end,
+        award_type_dropdown = {
+            name = CLM.L["Type"],
+            type = "select",
+            values = CONSTANTS.EPGP_POINT_AWARD_TYPES_GUI,
+            set = function(i, v) self.awardType = v end,
+            get = function(i) return self.awardType end,
+            control = "CLMButtonDropDown",
             hidden = (function()
                 local roster = CLM.MODULES.RosterManager:GetRosterByUid(self.roster)
                 if roster then
@@ -265,7 +279,7 @@ local function GenerateAssistantOptions(self)
                 return true
             end),
             order = 15,
-            width = "full"
+            width = 0.2
         },
     }
 end
@@ -278,9 +292,27 @@ local function GenerateManagerOptions(self)
             type = "input",
             set = function(i, v) self.decayValue = v end,
             get = function(i) return self.decayValue end,
-            width = 0.575,
+            width = 0.5,
             pattern = CONSTANTS.REGEXP_FLOAT,
             order = 21
+        },
+        decay_type_dropodown = {
+            name = CLM.L["Type"],
+            type = "select",
+            values = CONSTANTS.EPGP_POINT_DECAY_TYPES_GUI,
+            set = function(i, v) self.decayType = v end,
+            get = function(i) return self.decayType end,
+            control = "CLMButtonDropDown",
+            hidden = (function()
+                local roster = CLM.MODULES.RosterManager:GetRosterByUid(self.roster)
+                if roster then
+                    return (roster:GetPointType() ~= CONSTANTS.POINT_TYPE.EPGP)
+                end
+
+                return true
+            end),
+            order = 23,
+            width = 0.2
         },
         decay_negative = {
             name = CLM.L["Decay Negatives"],
@@ -294,13 +326,13 @@ local function GenerateManagerOptions(self)
                 return (roster:GetPointType() == CONSTANTS.POINT_TYPE.EPGP)
             end,
             width = "full",
-            order = 23
+            order = 24
         },
         decay_dkp = {
             name = CLM.L["Decay"],
             desc = CLM.L["Execute decay for players based on context."],
             type = "execute",
-            width = 0.575,
+            width = isElvUI and 0.5 or 0.575,
             func = (function(i)
                 -- Decay Value
                 local decayValue = tonumber(self.decayValue)
@@ -312,7 +344,7 @@ local function GenerateManagerOptions(self)
                     return
                 end
                 if self.context == CONSTANTS.ACTION_CONTEXT.ROSTER then
-                    CLM.MODULES.PointManager:UpdateRosterPoints(roster, decayValue, CONSTANTS.POINT_CHANGE_REASON.DECAY, CONSTANTS.POINT_MANAGER_ACTION.DECAY, not self.includeNegative)
+                    CLM.MODULES.PointManager:UpdateRosterPoints(roster, decayValue, CONSTANTS.POINT_CHANGE_REASON.DECAY, CONSTANTS.POINT_MANAGER_ACTION.DECAY, not self.includeNegative, nil, self.decayType)
                 elseif self.context == CONSTANTS.ACTION_CONTEXT.SELECTED then
                     local profiles = UnifiedGUI_Standings:GetSelection()
                     if not profiles or #profiles == 0 then
@@ -320,7 +352,7 @@ local function GenerateManagerOptions(self)
                         LOG:Debug("UnifiedGUI_Standings(Decay): profiles == 0")
                         return
                     end
-                    CLM.MODULES.PointManager:UpdatePoints(roster, profiles, decayValue, CONSTANTS.POINT_CHANGE_REASON.DECAY, CONSTANTS.POINT_MANAGER_ACTION.DECAY)
+                    CLM.MODULES.PointManager:UpdatePoints(roster, profiles, decayValue, CONSTANTS.POINT_CHANGE_REASON.DECAY, CONSTANTS.POINT_MANAGER_ACTION.DECAY, nil, self.decayType)
                 else
                     LOG:Warning("Invalid context. You should not decay raid only.")
                 end
@@ -328,14 +360,16 @@ local function GenerateManagerOptions(self)
             confirm = (function()
                 local decayValue = tonumber(self.decayValue)
                 if not decayValue then return CLM.L["Missing decay value"] end
+                local roster = CLM.MODULES.RosterManager:GetRosterByUid(self.roster)
+                local points = UTILS.DecodePointTypeChangeName(roster:GetPointType(), self.decayType, true)
                 if self.context == CONSTANTS.ACTION_CONTEXT.RAID then
                     return CLM.L["Invalid context. You should not decay raid only."]
                 elseif self.context == CONSTANTS.ACTION_CONTEXT.ROSTER then
-                    return string.format(CLM.L["Decay %s%% points to everyone in roster."], decayValue)
+                    return string.format(CLM.L["Decay %s%% %s to everyone in roster."], decayValue, points)
                 elseif self.context == CONSTANTS.ACTION_CONTEXT.SELECTED then
                     local profiles = UnifiedGUI_Standings:GetSelection()
                     if not profiles then profiles = {} end
-                    return string.format(CLM.L["Decay %s%% points to %s selected players."], decayValue, #profiles)
+                    return string.format(CLM.L["Decay %s%% %s to %s selected players."], decayValue, points, #profiles)
                 end
             end),
             order = 22
@@ -360,7 +394,7 @@ end
 
 local columnsDKP = {
     {   name = "", width = 18, DoCellUpdate = UTILS.LibStClassCellUpdate },
-    {   name = CLM.L["Name"],   width = 107 },
+    {   name = CLM.L["Name"],   width = 107, DoCellUpdate = UTILS.LibStNameCellUpdate },
     {   name = CLM.L["DKP"], width = 65, sort = LibStub("ScrollingTable").SORT_DSC, color = colorGreen },
 	{   name = CLM.L["Spent last raid"], width = 107 },
     {   name = CLM.L["Spent"], width = 65 },
@@ -373,7 +407,7 @@ local columnsDKP = {
 
 local columnsEPGP = {
     {   name = "", width = 18, DoCellUpdate = UTILS.LibStClassCellUpdate },
-    {   name = CLM.L["Name"], width = 107 },
+    {   name = CLM.L["Name"], width = 107, DoCellUpdate = UTILS.LibStNameCellUpdate },
     {   name = CLM.L["PR"], width = 65, sort = LibStub("ScrollingTable").SORT_DSC, color = colorGreen },
     {   name = CLM.L["EP"], width = 65 },
     {   name = CLM.L["GP"], width = 65 },
@@ -414,7 +448,7 @@ local tableStructure = {
                 gains = gains .. " / " .. weeklyCap
             end
 
-            local isEPGP = ST_GetIsEPGP(rowData)
+            local isEPGP = (ST_GetPointType(rowData) == CONSTANTS.POINT_TYPE.EPGP)
             if isEPGP then
                 tooltip:AddDoubleLine(CLM.L["Information"], lockedString)
                 tooltip:AddDoubleLine(
@@ -464,7 +498,7 @@ local tableStructure = {
                 end
                 for i=#lootList, limit, -1 do
                     local loot = lootList[i]
-                    local _, itemLink = GetItemInfo(loot:Id())
+                    local _, itemLink = UTILS.GetItemInfo(loot:String())
                     if itemLink then
                         local value = loot:Value()
                         if isEPGP then
@@ -493,13 +527,9 @@ local tableStructure = {
 
                     if reason == CONSTANTS.POINT_CHANGE_REASON.DECAY then
                         value = value .. "%"
-                    elseif isEPGP then
-                        if point:Spent() then
-                            value = value .. " " .. CLM.L["GP"]
-                        else
-                            value = value .. " " .. CLM.L["EP"]
-                        end
                     end
+                    local suffix = UTILS.DecodePointTypeChangeName(ST_GetPointType(rowData), point:Type())
+                    value = value .. " " .. suffix
                     tooltip:AddDoubleLine(CONSTANTS.POINT_CHANGE_REASONS.ALL[reason] or "", value)
                 end
             else
@@ -563,7 +593,7 @@ local function tableDataFeeder()
             local highlight
             if profile:IsLocked() then
                 highlight = highlightLocked
-            elseif profile:Name() == whoami then
+            elseif profile:Name() == UTILS.whoami() then
                 highlight = highlightPlayer
             end
             local classColor = UTILS.GetClassColor(profile:ClassInternal())
@@ -577,15 +607,15 @@ local function tableDataFeeder()
         --[[7]]  {value = UTILS.ColorCodeByPercentage(attendance)},
         --[[8]]  {value = attended_last_raid},
             -- not displayed
-        --[[9]]  {value = roster:GetCurrentGainsForPlayer(GUID)},                            -- 7
-        --[[10]]  {value = weeklyCap},
-        --[[11]]  {value = pointInfo},
-        --[[12]] {value = roster:GetProfileLootByGUID(GUID)},
-        --[[13]] {value = roster:GetProfilePointHistoryByGUID(GUID)},
-        --[[14]] {value = isEPGP},
-        --[[15]] {value = profile:IsLocked()},
-        --[[16]] {value = highlight},
-        --[[17]] {value = profile:Class()}
+        --[[7]]  {value = roster:GetCurrentGainsForPlayer(GUID)},                            -- 7
+        --[[8]]  {value = weeklyCap},
+        --[[9]]  {value = pointInfo},
+        --[[10]] {value = roster:GetProfileLootByGUID(GUID)},
+        --[[11]] {value = roster:GetProfilePointHistoryByGUID(GUID)},
+        --[[12]] {value = roster:GetPointType()},
+        --[[13]] {value = profile:IsLocked()},
+        --[[14]] {value = highlight},
+        --[[15]] {value = profile:Class()}
             },
             DoCellUpdate = highlight
             }
@@ -742,9 +772,11 @@ local function beforeShowHandler()
     LOG:Trace("UnifiedGUI_Standings beforeShowHandler()")
     UnifiedGUI_Standings.context = CONSTANTS.ACTION_CONTEXT.ROSTER
     if CLM.MODULES.RaidManager:IsInRaid() then
-        UnifiedGUI_Standings.roster = CLM.MODULES.RaidManager:GetRaid():Roster():UID()
+        HandleRosterChange(CLM.MODULES.RaidManager:GetRaid():Roster():UID())
         UnifiedGUI_Standings.filter:SetFilterValue(CONSTANTS.FILTER.IN_RAID, true)
         UnifiedGUI_Standings.context = CONSTANTS.ACTION_CONTEXT.RAID
+    else
+        UnifiedGUI_Standings.filter:SetFilterValue(CONSTANTS.FILTER.IN_RAID, false)
     end
 
     refreshHandler() -- this is actually here only for the structure update
@@ -759,7 +791,7 @@ end
 local function restoreHandler()
     LOG:Trace("UnifiedGUI_Standings restoreHandler()")
     local storage = CLM.GUI.Unified:GetStorage(UnifiedGUI_Standings.name)
-    UnifiedGUI_Standings.roster = storage.roster
+    HandleRosterChange(storage.roster)
 end
 
 local function dataReadyHandler()
@@ -767,8 +799,10 @@ local function dataReadyHandler()
     if not CLM.MODULES.RosterManager:GetRosterByUid(UnifiedGUI_Standings.roster) then
         local _, roster = next(CLM.MODULES.RosterManager:GetRosters())
         if roster then
-            UnifiedGUI_Standings.roster = roster:UID()
+            HandleRosterChange(roster:UID())
         end
+    else
+        HandleRosterChange(UnifiedGUI_Standings.roster) -- force update of data relying on roster
     end
 end
 
@@ -803,5 +837,6 @@ CLM.GUI.Unified:RegisterTab(
         store = storeHandler,
         restore = restoreHandler,
         dataReady = dataReadyHandler
-    }
+    },
+    "Interface\\AddOns\\ClassicLootManager\\Media\\Icons\\clm-dark-32.png"
 )

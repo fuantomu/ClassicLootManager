@@ -7,11 +7,12 @@ local  _, CLM = ...
 -- ------------------------------- --
 
 local getGuidFromInteger = CLM.UTILS.getGuidFromInteger
+local ValidateIntegerGUID = CLM.UTILS.ValidateIntegerGUID
 
 local PointHistory = {}
 local FakePointHistory = {}
 
-function PointHistory:New(entry, targets, timestamp, value, reason, creator, note, spent)
+function PointHistory:New(entry, targets, timestamp, value, reason, creator, note, type)
     local o = {}
 
     setmetatable(o, self)
@@ -22,14 +23,9 @@ function PointHistory:New(entry, targets, timestamp, value, reason, creator, not
     o.timestamp = tonumber(timestamp) or entry:time()
     o.value = tonumber(value) or entry:value()
     o.reason = tonumber(reason) or entry:reason()
-    o.creator = creator or entry:creator()
+    o.creator = creator or entry:creatorFull()
     o.note = note or entry:note()
-    if entry.spent then -- Not All entries have spent field
-        o.spent = spent or entry:spent()
-    else
-        o.spent = spent or false
-    end
-
+    o.type = type or entry:type()
     return o
 end
 
@@ -42,8 +38,10 @@ function PointHistory:Profiles()
             -- The code below breaks Model-View-Controller rule as it accessess Managers
             -- Maybe the caching should be done in GUI module?
             -- TODO: resolve this
-            local profile = CLM.MODULES.ProfileManager:GetProfileByGUID(getGuidFromInteger(target))
-            if not profile then
+            local profile
+            if ValidateIntegerGUID(target) then
+                profile = CLM.MODULES.ProfileManager:GetProfileByGUID(getGuidFromInteger(target))
+            else
                 profile = CLM.MODULES.ProfileManager:GetProfileByGUID(target)
             end
             if profile then
@@ -81,11 +79,11 @@ function PointHistory:Entry()
     return self.entry
 end
 
-function PointHistory:Spent()
-    return self.spent
+function PointHistory:Type()
+    return self.type
 end
 
-function FakePointHistory:New(targets, timestamp, value, reason, creator, note, spent)
+function FakePointHistory:New(targets, timestamp, value, reason, creator, note, type)
     local o = {}
 
     setmetatable(o, self)
@@ -97,7 +95,7 @@ function FakePointHistory:New(targets, timestamp, value, reason, creator, note, 
     o.reason = reason
     o.creator = creator or ""
     o.note = note or ""
-    o.spent = spent or false
+    o.type = type or CLM.CONSTANTS.POINT_CHANGE_TYPE.POINTS
 
     return o
 end
@@ -110,8 +108,14 @@ function FakePointHistory:Profiles()
             -- The code below breaks Model-View-Controller rule as it accessess Managers
             -- Maybe the caching should be done in GUI module?
             -- TODO: resolve this
-            local profile = CLM.MODULES.ProfileManager:GetProfileByGUID(getGuidFromInteger(target))
-            if not profile then
+            -- local profile = CLM.MODULES.ProfileManager:GetProfileByGUID(getGuidFromInteger(target))
+            -- if not profile then
+            --     profile = CLM.MODULES.ProfileManager:GetProfileByGUID(target)
+            -- end
+            local profile
+            if ValidateIntegerGUID(target) then
+                profile = CLM.MODULES.ProfileManager:GetProfileByGUID(getGuidFromInteger(target))
+            else
                 profile = CLM.MODULES.ProfileManager:GetProfileByGUID(target)
             end
             if profile then
@@ -149,8 +153,8 @@ function FakePointHistory:Entry()
     return nil
 end
 
-function FakePointHistory:Spent()
-    return self.spent
+function FakePointHistory:Type()
+    return self.type
 end
 
 CLM.MODELS.PointHistory = PointHistory

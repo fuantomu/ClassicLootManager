@@ -20,6 +20,7 @@ end
 
 local function StoreLocation(self)
     self.db.location = { self.top:GetPoint() }
+    self.db.location[2] = nil
 end
 
 local function RestoreLocation(self)
@@ -152,7 +153,7 @@ local function CreateAuctionDisplay(self)
         local tooltip = self.tooltip
         if not tooltip then return end
         local itemId = ST_GetItemId(rowData)
-        local itemString = "item:" .. tonumber(itemId)
+        local itemString = "item:" .. tostring(itemId)
         tooltip:SetOwner(rowFrame, "ANCHOR_TOPRIGHT")
         tooltip:SetHyperlink(itemString)
         tooltip:AddLine(ST_GetAuctionTime(rowData))
@@ -170,7 +171,7 @@ local function CreateAuctionDisplay(self)
             end
             local bidderProfile = CLM.MODULES.ProfileManager:GetProfileByName(bidder)
             if bidderProfile then
-                bidder = UTILS.ColorCodeText(bidder, UTILS.GetClassColor(bidderProfile:Class()).hex)
+                bidder = UTILS.ColorCodeText(Ambiguate(bidder, "none"), UTILS.GetClassColor(bidderProfile:Class()).hex)
             end
             tooltip:AddDoubleLine(bidder, bid)
         end

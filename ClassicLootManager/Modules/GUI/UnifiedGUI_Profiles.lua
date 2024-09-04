@@ -60,7 +60,7 @@ end
 
 local function GenerateAssistantOptions(self)
     local rankOptions = {}
-    local ranks = CLM.MODULES.GuildInfoListener:GetRanks()
+    local ranks = CLM.MODULES.TrustInfoProvider:GetRanks()
     for i,o in pairs(ranks) do
         rankOptions[i] = o.name
     end
@@ -70,6 +70,13 @@ local function GenerateAssistantOptions(self)
             type = "header",
             name = CLM.L["Management"],
             order = 20
+        },
+        alt_main_linking = {
+            type = "execute",
+            width = "full",
+            name = CLM.L["Link Alt to Main"],
+            func = function() CLM.GUI.AltMainLinking:Show() end,
+            order = 20.5
         },
         fill_from_guild_ranks = {
             name = CLM.L["Ranks"],
@@ -85,7 +92,7 @@ local function GenerateAssistantOptions(self)
             desc = CLM.L["Minimum level of players to fill from guild."],
             type = "range",
             min  = 0,
-            max  = 80,
+            max  = 85,
             step = 1,
             bigStep = 1,
             set = function(i, v) self.minimumLevel = v end,
@@ -169,7 +176,7 @@ local tableStructure = {
     -- columns - structure of the ScrollingTable
     columns = {
         {name = "", width = 18, DoCellUpdate = UTILS.LibStClassCellUpdate},
-        {name = CLM.L["Name"],  width = 115, sort = LibStub("ScrollingTable").SORT_ASC},
+        {name = CLM.L["Name"],  width = 115, DoCellUpdate = UTILS.LibStNameCellUpdate, sort = LibStub("ScrollingTable").SORT_ASC},
         {name = CLM.L["Main"],  width = 115 },
         {name = CLM.L["Role"],  width = 60},
         {name = CLM.L["Version"],  width = 70,
@@ -301,9 +308,15 @@ end
 
 local function beforeShowHandler()
     LOG:Trace("UnifiedGUI_Profiles beforeShowHandler()")
+    if not UnifiedGUI_Profiles.alreadyDisplayed then
+        verticalOptionsFeeder()
+        UnifiedGUI_Profiles.alreadyDisplayed = true
+    end
     if CLM.MODULES.RaidManager:IsInRaid() then
         UnifiedGUI_Profiles.roster = CLM.MODULES.RaidManager:GetRaid():UID()
         UnifiedGUI_Profiles.filter:SetFilterValue(CONSTANTS.FILTER.IN_RAID, true)
+    else
+        UnifiedGUI_Profiles.filter:SetFilterValue(CONSTANTS.FILTER.IN_RAID, false)
     end
 end
 
@@ -316,5 +329,6 @@ CLM.GUI.Unified:RegisterTab(
     {
         initialize = initializeHandler,
         beforeShow = beforeShowHandler
-    }
+    },
+    "Interface\\PvPRankBadges\\PvPRank13.blp"
 )

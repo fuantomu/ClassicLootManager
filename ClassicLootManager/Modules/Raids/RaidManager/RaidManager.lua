@@ -6,13 +6,8 @@ local CONSTANTS = CLM.CONSTANTS
 local UTILS     = CLM.UTILS
 -- ------------------------------- --
 
--- luacheck: ignore CHAT_MESSAGE_CHANNEL
 local CHAT_MESSAGE_CHANNEL = "RAID_WARNING"
---@debug@
-CHAT_MESSAGE_CHANNEL = "GUILD"
---@end-debug@
 
-local whoami = UTILS.whoami()
 local whoamiGUID = UTILS.whoamiGUID()
 
 local getGuidFromInteger = UTILS.getGuidFromInteger
@@ -53,7 +48,7 @@ function RaidManager:Initialize()
                 return
             end
             -- Handle existing raid gracefully
-            local creator = getGuidFromInteger(entry:creator())
+            local creator = getGuidFromInteger(entry:creatorFull())
             local raid = CLM.MODELS.Raid:New(raidUid, name, roster, config, creator, entry)
             LOG:Debug("RaidManager mutator(): New raid %s(%s) from %s", name, raidUid, creator)
             self.cache.raids[raidUid] = raid
@@ -184,6 +179,7 @@ function RaidManager:Initialize()
 
     CLM.MODULES.LedgerManager:RegisterOnUpdate(function(lag, uncommitted)
         if lag ~= 0 or uncommitted ~= 0 then return end
+        self:RegisterEventHandling()
         self:ParseStatus()
     end)
 
@@ -191,8 +187,10 @@ function RaidManager:Initialize()
         self:WipeAll()
     end)
 
-    self:RegisterEventHandling()
-    C_Timer.After(20, function() self:ParseStatus() end) -- backup in case of 0 entries
+    C_Timer.After(20, function()
+        self:RegisterEventHandling()
+        self:ParseStatus()
+    end) -- backup in case of 0 entries
 
 end
 
@@ -200,7 +198,7 @@ function RaidManager:ParseStatus()
     LOG:Trace("RaidManager:ParseStatus()")
     if not self._initialized then
         -- Mark raids as stale
-        for raid in ipairs(self.cache.raids) do
+        for _, raid in pairs(self.cache.raids) do
             if raid:IsActive() then
                 local referenceTime = raid:StartTime()
                 if referenceTime == 0 then
@@ -217,6 +215,10 @@ function RaidManager:ParseStatus()
 
         self._initialized = true
     end
+end
+
+function RaidManager:IsInitialized()
+    return self._initialized
 end
 
 function RaidManager:ListRaids()
@@ -320,11 +322,12 @@ function RaidManager:CreateRaid(roster, name, config)
         LOG:Message(CLM.L["You are already in an active raid. Leave or finish it before creating new one."])
         return
     end
+    --[===[@non-debug@
     if CLM.MODULES.LedgerManager:IsTimeTraveling() then
         LOG:Message(CLM.L["Raid management is disabled during time traveling."])
         return
     end
-
+    --@end-non-debug@]===]
     CLM.MODULES.LedgerManager:Submit(CLM.MODELS.LEDGER.RAID.Create:new(roster:UID(), name, config))
 end
 
@@ -361,7 +364,7 @@ function RaidManager:StartRaid(raid)
     for i=1,MAX_RAID_MEMBERS do
         local name = GetRaidRosterInfo(i)
         if name then
-            local profile = CLM.MODULES.ProfileManager:GetProfileByName(UTILS.RemoveServer(name))
+            local profile = CLM.MODULES.ProfileManager:GetProfileByName(UTILS.Disambiguate(name))
             if profile then
                 tinsert(players, profile)
                 joining_players_guids[profile:GUID()] = true
@@ -383,7 +386,7 @@ function RaidManager:StartRaid(raid)
     -- Start Raid
     CLM.MODULES.LedgerManager:Submit(CLM.MODELS.LEDGER.RAID.Start:new(raid:UID(), players, standby), true)
     if CLM.GlobalConfigs:GetRaidWarning() and IsInRaid() then
-        SendChatMessage(string.format(CLM.L["Raid [%s] started"], raid:Name()) , CHAT_MESSAGE_CHANNEL)
+        UTILS.SendChatMessage(string.format(CLM.L["Raid [%s] started"], raid:Name()) , CHAT_MESSAGE_CHANNEL)
     end
     self:HandleRosterUpdateEvent()
     -- On Time Bonus
@@ -395,7 +398,7 @@ function RaidManager:StartRaid(raid)
         end
         local onTimeBonusValue = config:Get("onTimeBonusValue")
         if config:Get("onTimeBonus") and onTimeBonusValue > 0 then
-            CLM.MODULES.PointManager:UpdateRaidPoints(raid, onTimeBonusValue, CONSTANTS.POINT_CHANGE_REASON.ON_TIME_BONUS, CONSTANTS.POINT_MANAGER_ACTION.MODIFY)
+            CLM.MODULES.PointManager:UpdateRaidPoints(raid, onTimeBonusValue, CONSTANTS.POINT_CHANGE_REASON.ON_TIME_BONUS, CONSTANTS.POINT_MANAGER_ACTION.MODIFY, nil, CONSTANTS.POINT_CHANGE_TYPE.POINTS)
         end
     end
 end
@@ -428,14 +431,14 @@ function RaidManager:EndRaid(raid)
         end
         local raidCompletionBonusValue = config:Get("raidCompletionBonusValue")
         if config:Get("raidCompletionBonus") and raidCompletionBonusValue > 0 then
-            CLM.MODULES.PointManager:UpdateRaidPoints(raid, raidCompletionBonusValue, CONSTANTS.POINT_CHANGE_REASON.RAID_COMPLETION_BONUS, CONSTANTS.POINT_MANAGER_ACTION.MODIFY)
+            CLM.MODULES.PointManager:UpdateRaidPoints(raid, raidCompletionBonusValue, CONSTANTS.POINT_CHANGE_REASON.RAID_COMPLETION_BONUS, CONSTANTS.POINT_MANAGER_ACTION.MODIFY, nil, CONSTANTS.POINT_CHANGE_TYPE.POINTS)
         end
     end
     -- End raid
     CLM.MODULES.LedgerManager:Submit(CLM.MODELS.LEDGER.RAID.End:new(raid:UID()), true)
 
     if CLM.GlobalConfigs:GetRaidWarning() and IsInRaid() then
-        SendChatMessage(string.format(CLM.L["Raid [%s] ended"], raid:Name()) , CHAT_MESSAGE_CHANNEL)
+        UTILS.SendChatMessage(string.format(CLM.L["Raid [%s] ended"], raid:Name()) , CHAT_MESSAGE_CHANNEL)
     end
 end
 
@@ -675,7 +678,7 @@ function RaidManager:UpdateGameRaidInformation()
     if lootmethod == "master" and masterlooterRaidID then
         local name = GetRaidRosterInfo(masterlooterRaidID)
         if name then
-            name = UTILS.RemoveServer(name)
+            name = UTILS.Disambiguate(name)
             self.IsMasterLootSystem = true
             self.MasterLooter = name
             self.RaidAssistants[name] = true -- we add it in case ML is not an assistant
@@ -688,7 +691,7 @@ function RaidManager:UpdateGameRaidInformation()
     for i=1,MAX_RAID_MEMBERS do
         local name, rank = GetRaidRosterInfo(i)
         if name then
-            name = UTILS.RemoveServer(name)
+            name = UTILS.Disambiguate(name)
             if rank >= 1 then
                 self.RaidAssistants[name] = true
             end
@@ -719,7 +722,7 @@ function RaidManager:UpdateRaiderList()
     for i=1,MAX_RAID_MEMBERS do
         local name = GetRaidRosterInfo(i)
         if name then
-            name = UTILS.RemoveServer(name)
+            name = UTILS.Disambiguate(name)
             current[name] = true
             local profile = CLM.MODULES.ProfileManager:GetProfileByName(name)
             if profile then
@@ -745,7 +748,7 @@ end
 
 function RaidManager:IsRaidOwner(name)
     LOG:Trace("RaidManager:IsRaidOwner()")
-    name = name or whoami
+    name = name or UTILS.whoami()
     local isOwner
     if IsPlayerInPvP() then
         LOG:Debug("Player in PvP")
@@ -775,7 +778,7 @@ end
 
 
 function RaidManager:IsMasterLooter(name)
-    return self.IsMasterLootSystem and (self.MasterLooter == (name or whoami)) or false
+    return self.IsMasterLootSystem and (self.MasterLooter == (name or UTILS.whoami())) or false
 end
 function RaidManager:IsAllowedToAuction(name, relaxed)
     --[==[@debug@
@@ -783,7 +786,7 @@ function RaidManager:IsAllowedToAuction(name, relaxed)
     --@end-debug@]==]
     --@non-debug@
     LOG:Trace("RaidManager:IsAllowedToAuction()")
-    name = name or whoami
+    name = name or UTILS.whoami()
 
     if not relaxed then -- Relaxed requirements: doesn't need to be assitant (for out of guild checks)
         if not CLM.MODULES.ACL:CheckLevel(CONSTANTS.ACL.LEVEL.ASSISTANT, name) then

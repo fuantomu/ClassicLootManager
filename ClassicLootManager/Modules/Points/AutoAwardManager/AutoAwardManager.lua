@@ -12,14 +12,24 @@ local HYDROSS_NPC_ID = 21216
 local RAID_AWARD_LEDGER_CLASS = "DR"
 
 local multiWoWDifficultyIDs = {
-    [3] = 3,
-    [4] = 4,
-    [5] = 5,
-    [6] = 6,
-    [9] = 9,
+    [0] = 0, -- World Bosses
+    [3] = 3, -- 10 man
+    [4] = 4, -- 25 man
+    [5] = 5, -- 10 man HC
+    [6] = 6, -- 25 man HC
+    [9] = 9, -- 40 man
     [148] = 148,
     [175] = 3, -- 10 man
     [176] = 4, -- 25 man
+    [185] = 148, -- 20 man
+    [186] = 9, -- 40 man
+    [197] = 3, -- 10 man SoD
+    [198] = 3, -- 10 man SoD
+    [215] = 148,
+    [14] = 14,
+    [15] = 15,
+    [16] = 16,
+    [17] = 17,
 }
 
 local bossKillEncounterWorkaround = {
@@ -34,7 +44,7 @@ local bossKillEncounterWorkaround = {
     [776] = 1128,
     [885] = 1129,
     -- Ulduar
-    [757] = 1130, -- Might require workaround
+    [757] = 1130,
     [750] = 1131,
     [744] = 1132,
     [753] = 1133,
@@ -44,10 +54,34 @@ local bossKillEncounterWorkaround = {
     [749] = 1137,
     [754] = 1138,
     [746] = 1139,
-    [748] = 1140, -- Might require workaround
+    [748] = 1140,
     [752] = 1141,
     [747] = 1142,
-    [756] = 1143
+    [756] = 1143,
+    -- Trial of the Grand Crusader
+    [629] = 1088,
+    [633] = 1087,
+    [637] = 1086,
+    [641] = 1089,
+    [645] = 1085,
+    -- ICC
+    [852] = 1095,
+    [848] = 1096,
+    [849] = 1097,
+    [854] = 1098,
+    [847] = 1099,
+    [846] = 1100,
+    [845] = 1101,
+    [851] = 1102,
+    [853] = 1103,
+    [850] = 1104,
+    [855] = 1105,
+    [856] = 1106,
+    -- Ruby Sanctum
+    [890] = 1147,
+    [893] = 1148,
+    [891] = 1149,
+    [887] = 1150,
 }
 
 local function normalizeDifficultyId(difficultyId)
@@ -56,7 +90,7 @@ end
 
 local function awardBonusValue(id, value)
     if value ~= 0 then
-        CLM.MODULES.PointManager:UpdateRaidPoints(CLM.MODULES.RaidManager:GetRaid(), value, CONSTANTS.POINT_CHANGE_REASON.BOSS_KILL_BONUS, CONSTANTS.POINT_MANAGER_ACTION.MODIFY, tostring(id))
+        CLM.MODULES.PointManager:UpdateRaidPoints(CLM.MODULES.RaidManager:GetRaid(), value, CONSTANTS.POINT_CHANGE_REASON.BOSS_KILL_BONUS, CONSTANTS.POINT_MANAGER_ACTION.MODIFY, tostring(id), CONSTANTS.POINT_CHANGE_TYPE.POINTS)
     end
 end
 
@@ -205,7 +239,7 @@ local function handleIntervalBonus(self)
         end
     end
     if award then
-        CLM.MODULES.PointManager:UpdateRaidPoints(raid, value, CONSTANTS.POINT_CHANGE_REASON.INTERVAL_BONUS, CONSTANTS.POINT_MANAGER_ACTION.MODIFY)
+        CLM.MODULES.PointManager:UpdateRaidPoints(raid, value, CONSTANTS.POINT_CHANGE_REASON.INTERVAL_BONUS, CONSTANTS.POINT_MANAGER_ACTION.MODIFY, nil, CONSTANTS.POINT_CHANGE_TYPE.POINTS)
     end
 end
 

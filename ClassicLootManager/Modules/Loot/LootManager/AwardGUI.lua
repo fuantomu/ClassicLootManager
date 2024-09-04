@@ -12,7 +12,8 @@ local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 
 local REGISTRY = "clm_reg_awardgui_opt"
 
-local _, _, _, isElvUI = GetAddOnInfo("ElvUI")
+local _, _, _, isElvUI = UTILS.GetAddOnInfo("ElvUI")
+
 local BASE_WIDTH  = 375 + (isElvUI and 15 or 0)
 
 local function InitializeDB(self)
@@ -23,6 +24,7 @@ end
 
 local function StoreLocation(self)
     self.db.location = { self.top:GetPoint() }
+    self.db.location[2] = nil
 end
 
 local function RestoreLocation(self)
@@ -37,11 +39,22 @@ local options = {
     args = {}
 }
 
+local override = false
 local function UpdateOptions(self)
     local icon = "Interface\\Icons\\INV_Misc_QuestionMark"
     self.itemId = 0
+    self.extra = nil
     if self.itemLink then
-        self.itemId, _, _, _, icon = GetItemInfoInstant(self.itemLink)
+---@diagnostic disable-next-line: cast-local-type
+        _, _, _, _, icon = UTILS.GetItemInfoInstant(self.itemLink)
+        self.itemId, self.extra = UTILS.GetItemIdFromLink(self.itemLink)
+    end
+
+    if CLM.MODULES.RaidManager:IsInRaid() and not override then
+        local roster = CLM.MODULES.RaidManager:GetRaid():Roster()
+        if roster then
+            self.rosterId = roster:UID()
+        end
     end
 
     local profileNameMap = {}
@@ -55,7 +68,7 @@ local function UpdateOptions(self)
             for _, GUID in ipairs(profiles) do
                 local profile = CLM.MODULES.ProfileManager:GetProfileByGUID(GUID)
                 if profile then
-                    profileNameMap[profile:Name()] = profile:Name()
+                    profileNameMap[profile:Name()] = profile:ShortName()
                     profileList[#profileList + 1] = profile:Name()
                 end
             end
@@ -63,18 +76,7 @@ local function UpdateOptions(self)
         end
     end
 
-    -- self.note = ""
-    -- self.values = {}
-    -- if CLM.MODULES.RaidManager:IsInRaid() then
-    --     self.raid = CLM.MODULES.RaidManager:GetRaid()
-    --     self.roster = self.raid:Roster()
-    --     if self.roster then
-    --         self.configuration:Copy(self.roster.configuration)
-    --         self.values = UTILS.ShallowCopy(self.roster:GetItemValues(self.itemId))
-    --     end
-    -- end
-
-    local itemLink = "item:" .. tostring(self.itemId)
+    local itemLink = "item:" .. tostring(self.itemId) .. (self.extra or "")
     options.args = {
         icon = {
             name = "",
@@ -92,12 +94,19 @@ local function UpdateOptions(self)
                 return self.itemLink or ""
             end),
             set = (function(i,v)
-                if v and GetItemInfoInstant(v) then
-                    self.itemLink = v
-                else
-                    self.itemLink = nil
+                if v and UTILS.GetItemInfoInstant(v) then -- validate if it is an itemLink or itemString or itemId
+                    local itemID = UTILS.GetItemInfoInstant(v)
+                    local item
+                    if tostring(itemID) == v then
+                        item = Item:CreateFromItemID(tonumber(v))
+                    else
+                        item = Item:CreateFromItemLink(v)
+                    end
+                    item:ContinueOnItemLoad(function()
+                        self.itemLink = item:GetItemLink()
+                        self:Refresh()
+                    end)
                 end
-                self:Refresh()
             end),
             width = 1.4,
             order = 2,
@@ -108,6 +117,7 @@ local function UpdateOptions(self)
             type = "select",
             set = function(i, v)
                 self.rosterId = v
+                override = true
                 self:Refresh()
             end,
             get = function(i) return self.rosterId end,
@@ -143,21 +153,30 @@ local function UpdateOptions(self)
             name = CLM.L["Award"],
             type = "execute",
             func = (function()
-                local success, _ = CLM.MODULES.LootManager:AwardItem(self.roster, self.awardPlayer, self.itemLink, self.itemId, self.awardValue)
+                local awardTarget = self.roster
+                if CLM.MODULES.RaidManager:IsInRaid() then
+                    local raid = CLM.MODULES.RaidManager:GetRaid()
+                    local roster = raid:Roster()
+                    if self.roster == roster then
+                        awardTarget = raid
+                    end
+                end
+                local success, _ = CLM.MODULES.LootManager:AwardItem(awardTarget, self.awardPlayer, self.itemLink, self.itemId, self.extra, self.awardValue)
                 if success then
-                    CLM.MODULES.AutoAssign:Handle(self.itemId, self.awardPlayer)
+                    CLM.MODULES.AutoAssign:Handle(self.itemLink, self.awardPlayer)
+                else
+                    self:Refresh()
                 end
                 self.itemLink = nil
                 self.itemId = 0
                 self.awardValue = 0
                 self.awardPlayer = ""
-                self:Refresh()
             end),
             confirm = (function()
                 return string.format(
                     CLM.L["Are you sure, you want to award %s to %s for %s %s?"],
                     self.itemLink,
-                    UTILS.ColorCodeText(self.awardPlayer, "FFD100"),
+                    UTILS.ColorCodeText(Ambiguate(self.awardPlayer, "none"), "FFD100"),
                     tostring(self.awardValue),
                     (self.roster and self.roster:GetPointType() == CONSTANTS.POINT_TYPE.EPGP) and CLM.L["GP"] or CLM.L["DKP"]
                 )
@@ -218,7 +237,7 @@ local function RegisterSlash(self)
     CLM.MODULES.ConfigManager:RegisterSlash(slash)
 end
 
-local function CreateConfig(self)
+local function CreateConfig()
     local config = {
         awarding_header = {
             type = "header",
@@ -241,7 +260,7 @@ end
 
 local function SetItemLink(self, args)
     local itemId = UTILS.GetItemIdFromLink(args)
-    if GetItemInfoInstant(itemId) then
+    if UTILS.GetItemInfoInstant(itemId) then
         self.itemLink = args
     end
 end
@@ -260,24 +279,24 @@ function AwardGUI:Initialize()
     if not CLM.MODULES.ACL:IsTrusted() then return end
     InitializeDB(self)
     Create(self)
-    CreateConfig(self)
+    CreateConfig()
     RegisterSlash(self)
     HookAwardFilling(self)
 
     CLM.MODULES.EventManager:RegisterWoWEvent({"PLAYER_LOGOUT"}, (function() StoreLocation(self) end))
     CLM.MODULES.LedgerManager:RegisterOnUpdate(function(lag, uncommitted)
         if lag ~= 0 or uncommitted ~= 0 then return end
-        self:Refresh()
+        self:Refresh(true)
     end)
 
     self._initialized = true
 end
 
-function AwardGUI:Refresh()
+function AwardGUI:Refresh(visible)
     LOG:Trace("AwardGUI:Refresh()")
+    if visible and not self.top:IsVisible() then return end
 
     UpdateOptions(self)
-    AceConfigRegistry:NotifyChange(REGISTRY)
     AceConfigDialog:Open(REGISTRY, self.OptionsGroup) -- Refresh the config gui panel
 end
 
@@ -295,6 +314,7 @@ function AwardGUI:Show(_, args)
     LOG:Trace("AwardGUI:Show()")
     if not self._initialized then return end
     SetItemLink(self, args)
+    override = false
     self:Refresh()
     if not self.top:IsVisible() then
         self.top:Show()

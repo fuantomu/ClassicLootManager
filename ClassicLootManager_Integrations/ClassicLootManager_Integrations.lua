@@ -5,8 +5,6 @@ PRIV.MODELS = {}
 PRIV.GUI = {}
 PRIV.CONSTANTS = {}
 
-local CLM = LibStub("ClassicLootManager").CLM
-
 local Integrations = {}
 
 function Integrations:Initialize()
@@ -19,4 +17,4 @@ function Integrations:Initialize()
 end
 PRIV.CONSTANTS.INTEGRATIONS = CLM.L["Integrations"]
 CLM.MODULES.ConfigManager:AddGroup(PRIV.CONSTANTS.INTEGRATIONS, true)
-CLM:RegisterExternal("Integrations", Integrations)
+CLM.RegisterExternal("Integrations", Integrations)
